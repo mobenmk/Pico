@@ -41,3 +41,23 @@ nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;st
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin:0 6px}
 .over{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center}
 .over .glass{text-align:center;min-width:250px;background:rgba(20,14,40,.92)}
+.in{width:100%;background:var(--glass);border:1px solid var(--line);color:var(--tx);border-radius:16px;padding:12px;font:inherit;outline:0;margin:6px 0}
+.row .in{width:auto;margin:0}
+.glass .pb{width:100%;margin-top:10px}
+.err{color:#ff8a8a;font-size:13px;min-height:18px;text-align:center;margin:6px 0 0}
+.ci{display:flex;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid var(--line)}
+.av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:700;font-size:18px;color:#fff}
+.cm{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.cm small{color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci em{color:var(--mu);font-size:12px;font-style:normal}
+#chatv{position:fixed;inset:0;z-index:15;background:radial-gradient(circle at 80% -10%,#2a1456,transparent 50%),var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+.chead{display:flex;align-items:center;gap:12px;padding:12px 14px}
+#msgs{flex:1;overflow:auto;padding:8px 14px;display:flex;flex-direction:column;gap:8px}
+.bub{max-width:78%;align-self:flex-end;padding:10px 14px;border-radius:18px;background:var(--glass);border:1px solid var(--line);word-break:break-word;line-height:1.8}
+.bub.me{align-self:flex-start;background:rgba(139,92,246,.3)}
+.bub small{display:block;color:var(--mu);font-size:10px;margin-top:2px}
+.cin{padding:8px 12px calc(10px + env(safe-area-inset-bottom));margin:0}
+#toast{position:fixed;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:40;background:rgba(30,20,60,.95);border:1px solid var(--line);padding:10px 16px;border-radius:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.on{opacity:1}
+#pe-sheet{z-index:30}
+body.inchat #pe-sheet{bottom:calc(76px + env(safe-area-inset-bottom))}

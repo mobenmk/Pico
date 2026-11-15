@@ -1,0 +1,131 @@
+import os, re, time, secrets, sqlite3
+from flask import Flask, request, jsonify
+from werkzeug.security import generate_password_hash, check_password_hash
+
+app = Flask(__name__)
+DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "picko.db")
+
+def db():
+    c = sqlite3.connect(DB)
+    c.row_factory = sqlite3.Row
+    return c
+
+def init():
+    c = db()
+    c.executescript("""
+    create table if not exists users(id integer primary key autoincrement, username text unique, name text, pw text, token text, created real);
+    create table if not exists msgs(id integer primary key autoincrement, a integer, b integer, text text, ts real);
+    create index if not exists i_msgs_a on msgs(a);
+    create index if not exists i_msgs_b on msgs(b);
+    """)
+    c.commit(); c.close()
+init()
+
+@app.after_request
+def cors(r):
+    r.headers["Access-Control-Allow-Origin"] = "*"
+    r.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    r.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    return r
+
+def err(m, code=400):
+    return jsonify(error=m), code
+
+def toint(v):
+    try: return int(v)
+    except Exception: return 0
+
+def me():
+    t = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+    if not t: return None
+    c = db(); u = c.execute("select * from users where token=?", (t,)).fetchone(); c.close()
+    return u
+
+@app.route("/ping")
+def ping():
+    return "ok"
+
+@app.route("/api/register", methods=["POST"])
+def register():
+    d = request.get_json(silent=True) or {}
+    un = str(d.get("username", "")).strip().lower()
+    name = str(d.get("name", "")).strip()[:30] or un
+    pw = str(d.get("password", ""))
+    if not re.fullmatch(r"[a-z0-9_]{3,20}", un):
+        return err("نام کاربری باید ۳ تا ۲۰ حرف انگلیسی، عدد یا _ باشه")
+    if len(pw) < 4:
+        return err("رمز عبور خیلی کوتاهه")
+    tok = secrets.token_hex(24)
+    c = db()
+    try:
+        cur = c.execute("insert into users(username,name,pw,token,created) values(?,?,?,?,?)",
+                        (un, name, generate_password_hash(pw), tok, time.time()))
+        c.commit(); uid = cur.lastrowid
+    except sqlite3.IntegrityError:
+        c.close(); return err("این نام کاربری قبلاً گرفته شده")
+    c.close()
+    return jsonify(token=tok, id=uid, username=un, name=name)
+
+@app.route("/api/login", methods=["POST"])
+def login():
+    d = request.get_json(silent=True) or {}
+    un = str(d.get("username", "")).strip().lower()
+    pw = str(d.get("password", ""))
+    c = db(); u = c.execute("select * from users where username=?", (un,)).fetchone(); c.close()
+    if not u or not check_password_hash(u["pw"], pw):
+        return err("نام کاربری یا رمز اشتباهه", 401)
+    return jsonify(token=u["token"], id=u["id"], username=u["username"], name=u["name"])
+
+@app.route("/api/search")
+def search():
+    u = me()
+    if not u: return err("login", 401)
+    q = request.args.get("q", "").strip().lower().lstrip("@")
+    if not q: return jsonify(users=[])
+    c = db()
+    rows = c.execute("select id,username,name from users where id!=? and (username like ? or lower(name) like ?) limit 20",
+                     (u["id"], "%" + q + "%", "%" + q + "%")).fetchall()
+    c.close()
+    return jsonify(users=[dict(r) for r in rows])
+
+@app.route("/api/send", methods=["POST"])
+def send():
+    u = me()
+    if not u: return err("login", 401)
+    d = request.get_json(silent=True) or {}
+    to = toint(d.get("to"))
+    text = str(d.get("text", "")).strip()[:4000]
+    if not text: return err("پیام خالیه")
+    c = db()
+    if not c.execute("select 1 from users where id=?", (to,)).fetchone():
+        c.close(); return err("کاربر پیدا نشد", 404)
+    ts = time.time()
+    cur = c.execute("insert into msgs(a,b,text,ts) values(?,?,?,?)", (u["id"], to, text, ts))
+    c.commit(); mid = cur.lastrowid; c.close()
+    return jsonify(message=dict(id=mid, text=text, ts=ts, mine=True))
+
+@app.route("/api/messages")
+def messages():
+    u = me()
+    if not u: return err("login", 401)
+    w = toint(request.args.get("with")); after = toint(request.args.get("after"))
+    c = db()
+    rows = c.execute("select * from (select id,a,text,ts from msgs where id>? and ((a=? and b=?) or (a=? and b=?)) order by id desc limit 200) order by id",
+                     (after, u["id"], w, w, u["id"])).fetchall()
+    c.close()
+    return jsonify(messages=[dict(id=r["id"], text=r["text"], ts=r["ts"], mine=(r["a"] == u["id"])) for r in rows])
+
+@app.route("/api/chats")
+def chats():
+    u = me()
+    if not u: return err("login", 401)
+    i = u["id"]
+    c = db()
+    rows = c.execute("""select x.id,x.username,x.name,m.text,m.ts,m.a from users x
+      join msgs m on m.id=(select max(id) from msgs where (a=? and b=x.id) or (a=x.id and b=?))
+      where x.id!=? order by m.id desc""", (i, i, i)).fetchall()
+    c.close()
+    return jsonify(chats=[dict(id=r["id"], username=r["username"], name=r["name"], text=r["text"], ts=r["ts"], mine=(r["a"] == i)) for r in rows])
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, threaded=True)
