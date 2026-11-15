@@ -20,3 +20,6 @@ async function check(){
  $('#srv').textContent=ok?'متصل':'قطع';
 }
 check();setInterval(check,5000);
+$('#emobtn').innerHTML=PE.svg('smile',24);
+$('#emobtn').onclick=()=>PE.picker(n=>{$('#demoin').value+=':'+n+':'});
+$('#sendbtn').onclick=()=>{const v=$('#demoin').value.trim();if(!v)return;$('#demo').innerHTML+='<div>'+PE.render(v)+'</div>';$('#demoin').value=''};
