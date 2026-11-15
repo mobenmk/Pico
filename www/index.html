@@ -1,0 +1,14 @@
+<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+body{margin:0;min-height:100vh;background:#000;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center}
+#bar{position:fixed;top:0;left:0;right:0;padding:12px;text-align:center;background:rgba(255,60,60,.25);backdrop-filter:blur(12px);display:none}
+.card{padding:32px 40px;border-radius:24px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(20px);text-align:center}
+</style></head><body>
+<div id="bar">مشکل از سرور</div>
+<div class="card"><h1>Picko</h1><p>اسکلت برنامه آماده است</p></div>
+<script src="config.js"></script>
+<script>
+async function check(){try{const c=new AbortController();setTimeout(()=>c.abort(),3000);await fetch(PICKO_SERVER+'/ping',{signal:c.signal,mode:'no-cors'});bar.style.display='none'}catch(e){bar.style.display='block'}}
+check();setInterval(check,5000);
+</script></body></html>
