@@ -14,10 +14,18 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: debug-keystore-v1
+      - name: Signing key
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f debug.keystore ]; then
+            keytool -genkeypair -keystore debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            git config user.name bot
+            git config user.email bot@users.noreply.github.com
+            git add debug.keystore
+            git commit -m "add signing key"
+            git push
+          fi
+          cp debug.keystore ~/.android/debug.keystore
       - run: npm install
       - run: npx cap add android
       - run: npx cap sync android
