@@ -26,6 +26,13 @@ def init():
     addcol(c, "users", "last_seen", "real")
     addcol(c, "msgs", "dlv", "real")
     addcol(c, "msgs", "seen", "real")
+    addcol(c, "msgs", "reply", "integer")
+    addcol(c, "msgs", "fwd", "text")
+    addcol(c, "msgs", "edited", "real")
+    addcol(c, "msgs", "ha", "integer")
+    addcol(c, "msgs", "hb", "integer")
+    addcol(c, "msgs", "gone", "integer")
+    addcol(c, "msgs", "mt", "real")
     c.commit(); c.close()
 init()
 
@@ -103,6 +110,16 @@ def search():
     c.close()
     return jsonify(users=[dict(r) for r in rows])
 
+def mj(r, i):
+    rt = None
+    if r["reply"] is not None:
+        rt = dict(id=r["reply"], text=(None if r["rgone"] else r["rtext"]), mine=(r["ra"] == i))
+    return dict(id=r["id"], text=r["text"], ts=r["ts"], mine=(r["a"] == i), fwd=r["fwd"], edited=bool(r["edited"]), reply=rt)
+
+MSQ = """select m.id,m.a,m.text,m.ts,m.reply,m.fwd,m.edited,
+ (select text from msgs where id=m.reply) rtext,(select a from msgs where id=m.reply) ra,(select gone from msgs where id=m.reply) rgone"""
+VIS = "((a=? and b=? and ha is null) or (a=? and b=? and hb is null))"
+
 @app.route("/api/send", methods=["POST"])
 def send():
     u = me()
@@ -110,14 +127,20 @@ def send():
     d = request.get_json(silent=True) or {}
     to = toint(d.get("to"))
     text = str(d.get("text", "")).strip()[:4000]
+    fwd = str(d.get("fwd", "")).strip()[:30] or None
+    rep = toint(d.get("reply")) or None
     if not text: return err("پیام خالیه")
     c = db()
     if not c.execute("select 1 from users where id=?", (to,)).fetchone():
         c.close(); return err("کاربر پیدا نشد", 404)
+    if rep and not c.execute("select 1 from msgs where id=? and ((a=? and b=?) or (a=? and b=?))", (rep, u["id"], to, to, u["id"])).fetchone():
+        rep = None
     ts = time.time()
-    cur = c.execute("insert into msgs(a,b,text,ts) values(?,?,?,?)", (u["id"], to, text, ts))
-    c.commit(); mid = cur.lastrowid; c.close()
-    return jsonify(message=dict(id=mid, text=text, ts=ts, mine=True))
+    cur = c.execute("insert into msgs(a,b,text,ts,reply,fwd) values(?,?,?,?,?,?)", (u["id"], to, text, ts, rep, fwd))
+    c.commit(); mid = cur.lastrowid
+    r = c.execute(MSQ + " from msgs m where m.id=?", (mid,)).fetchone()
+    c.close()
+    return jsonify(message=mj(r, u["id"]))
 
 @app.route("/api/messages")
 def messages():
@@ -125,6 +148,8 @@ def messages():
     if not u: return err("login", 401)
     i = u["id"]
     w = toint(request.args.get("with")); after = toint(request.args.get("after"))
+    try: since = float(request.args.get("since", "0"))
+    except Exception: since = 0.0
     seen = request.args.get("seen") == "1"
     now = time.time()
     c = db()
@@ -132,14 +157,53 @@ def messages():
     if seen:
         c.execute("update msgs set seen=? where a=? and b=? and seen is null", (now, w, i))
     c.commit()
-    rows = c.execute("select * from (select id,a,text,ts from msgs where id>? and ((a=? and b=?) or (a=? and b=?)) order by id desc limit 200) order by id",
+    rows = c.execute(MSQ + " from (select * from msgs where id>? and gone is null and " + VIS + " order by id desc limit 200) m order by m.id",
                      (after, i, w, w, i)).fetchall()
+    ch = c.execute("select id,text,gone,edited from msgs where mt is not null and mt>? and " + VIS, (since, i, w, w, i)).fetchall()
     dl = c.execute("select max(id) m from msgs where a=? and b=? and dlv is not null", (i, w)).fetchone()["m"] or 0
     rd = c.execute("select max(id) m from msgs where a=? and b=? and seen is not null", (i, w)).fetchone()["m"] or 0
     p = c.execute("select last_seen from users where id=?", (w,)).fetchone()
     c.close()
-    return jsonify(messages=[dict(id=r["id"], text=r["text"], ts=r["ts"], mine=(r["a"] == i)) for r in rows],
+    return jsonify(messages=[mj(r, i) for r in rows],
+                   changes=[dict(id=r["id"], text=r["text"], gone=bool(r["gone"]), edited=bool(r["edited"])) for r in ch],
                    dlv=dl, rd=rd, peer_last=(p["last_seen"] if p else None), now=now)
+
+@app.route("/api/edit", methods=["POST"])
+def edit():
+    u = me()
+    if not u: return err("login", 401)
+    d = request.get_json(silent=True) or {}
+    mid = toint(d.get("id")); text = str(d.get("text", "")).strip()[:4000]
+    if not text: return err("پیام خالیه")
+    c = db()
+    r = c.execute("select a from msgs where id=? and gone is null", (mid,)).fetchone()
+    if not r or r["a"] != u["id"]:
+        c.close(); return err("نمی‌شه ویرایش کرد", 403)
+    now = time.time()
+    c.execute("update msgs set text=?, edited=?, mt=? where id=?", (text, now, now, mid))
+    c.commit(); c.close()
+    return jsonify(ok=True)
+
+@app.route("/api/delete", methods=["POST"])
+def delete():
+    u = me()
+    if not u: return err("login", 401)
+    d = request.get_json(silent=True) or {}
+    ids = [toint(x) for x in (d.get("ids") or [])][:200]
+    everyone = bool(d.get("all"))
+    i = u["id"]; now = time.time()
+    c = db()
+    for mid in ids:
+        r = c.execute("select a,b from msgs where id=?", (mid,)).fetchone()
+        if not r or i not in (r["a"], r["b"]): continue
+        if everyone and r["a"] == i:
+            c.execute("update msgs set gone=1, mt=? where id=?", (now, mid))
+        elif r["a"] == i:
+            c.execute("update msgs set ha=1 where id=?", (mid,))
+        else:
+            c.execute("update msgs set hb=1 where id=?", (mid,))
+    c.commit(); c.close()
+    return jsonify(ok=True)
 
 @app.route("/api/chats")
 def chats():
@@ -151,8 +215,8 @@ def chats():
     c.execute("update msgs set dlv=? where b=? and dlv is null", (now, i))
     c.commit()
     rows = c.execute("""select x.id,x.username,x.name,x.last_seen,m.text,m.ts,m.a,m.dlv,m.seen,
-      (select count(*) from msgs where a=x.id and b=? and seen is null) as unread
-      from users x join msgs m on m.id=(select max(id) from msgs where (a=? and b=x.id) or (a=x.id and b=?))
+      (select count(*) from msgs where a=x.id and b=? and seen is null and gone is null and hb is null) as unread
+      from users x join msgs m on m.id=(select max(id) from msgs where gone is null and ((a=? and b=x.id and ha is null) or (a=x.id and b=? and hb is null)))
       where x.id!=? order by m.id desc""", (i, i, i, i)).fetchall()
     c.close()
     out = []
