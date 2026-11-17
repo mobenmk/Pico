@@ -61,3 +61,20 @@ nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;st
 #toast.on{opacity:1}
 #pe-sheet{z-index:30}
 body.inchat #pe-sheet{bottom:calc(76px + env(safe-area-inset-bottom))}
+.avw{position:relative;display:flex}
+.on-dot{position:absolute;bottom:0;right:0;width:12px;height:12px;border-radius:50%;background:#34d399;border:2px solid #0b0615}
+.cr{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.badge{min-width:20px;height:20px;border-radius:10px;background:#8b5cf6;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;padding:0 6px}
+.chead .t{display:flex;flex-direction:column;gap:2px}
+.chead small{color:var(--mu);font-size:12px}
+.cin{align-items:flex-end}
+#ci{flex:1;min-width:0;max-height:120px;overflow-y:auto;background:var(--glass);border:1px solid var(--line);border-radius:18px;padding:11px 14px;outline:0;line-height:1.7;white-space:pre-wrap;word-break:break-word;-webkit-user-select:text;user-select:text}
+#ci:empty:before{content:attr(data-ph);color:var(--mu)}
+.ep{display:inline-block;vertical-align:-5px;margin:0 1px}
+.bub{white-space:pre-wrap}
+.tkw{margin-inline-start:4px}
+.tk{display:inline-block;vertical-align:middle}
+.tk.rd path{stroke:#60a5fa}
+#epan{display:none;height:270px;border-top:1px solid var(--line);background:rgba(14,10,28,.95);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+#epan.on{display:flex;flex-direction:column}
+#epan .pe-grid{flex:1;max-height:none}
