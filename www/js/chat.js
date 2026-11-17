@@ -73,13 +73,39 @@ function insertEmoji(n){
  r.deleteContents();r.insertNode(z);r.insertNode(sp);
  r.setStartAfter(z);r.collapse(true);rng=r;
 }
+function delBack(){
+ const ci=$('#ci');if(!ci)return;
+ const at=[];
+ (function w(n){n.childNodes.forEach(c=>{if(c.nodeType==3){for(let i=0;i<c.nodeValue.length;i++)at.push([c,i])}else if(c.classList&&c.classList.contains('ep'))at.push([c,-1]);else w(c)})})(ci);
+ let r=rng;
+ if(!r||!ci.contains(r.startContainer)){r=document.createRange();r.selectNodeContents(ci);r.collapse(false)}
+ let k=at.length-1;
+ while(k>=0){const[n,i]=at[k];const pt=i<0?r.comparePoint(n.parentNode,[...n.parentNode.childNodes].indexOf(n)):r.comparePoint(n,i);if(pt<0)break;k--}
+ let nr=null;
+ while(k>=0){
+  const[n,i]=at[k];
+  if(i<0){const p=n.parentNode,ix=[...p.childNodes].indexOf(n);n.remove();nr=document.createRange();nr.setStart(p,ix);nr.collapse(true);break}
+  const ch=n.nodeValue[i];n.deleteData(i,1);nr=document.createRange();nr.setStart(n,i);nr.collapse(true);
+  if(ch!=='\u200b')break;
+  k--;
+ }
+ if(nr)rng=nr;
+}
 function buildPanel(){
  const p=$('#epan');
- p.innerHTML='<div class="pe-tabs">'+PE.cats.map(c=>`<button data-c="${c.k}">${PE.svg(c.i,22)}</button>`).join('')+'</div><div class="pe-grid"></div>';
+ const kb='<svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="3"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M7 14h10"/></svg>';
+ const dl='<svg viewBox="0 0 24 24"><path d="M9 6h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-6-6z"/><path d="M12.5 10l4 4m0-4l-4 4"/></svg>';
+ p.innerHTML=`<div class="ptop"><button class="pk" id="pkb">${kb}</button><div class="pe-tabs">`+PE.cats.map(c=>`<button data-c="${c.k}">${PE.svg(c.i,22)}</button>`).join('')+`</div><button class="pk" id="pdel">${dl}</button></div><div class="pe-grid"></div>`;
  const g=p.querySelector('.pe-grid');
  const show=k=>{g.innerHTML=PE.list.filter(e=>e.c==k).map(e=>`<button data-n="${e.n}">${PE.svg(e.n,34)}</button>`).join('');p.querySelectorAll('.pe-tabs button').forEach(b=>b.classList.toggle('on',b.dataset.c==k))};
  p.querySelector('.pe-tabs').onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.c)};
  g.onclick=e=>{const b=e.target.closest('button');if(b)insertEmoji(b.dataset.n)};
+ $('#pkb').onclick=togglePanel;
+ let ht=null;
+ const stop=()=>{clearTimeout(ht);clearInterval(ht)};
+ const d=$('#pdel');
+ d.onpointerdown=e=>{e.preventDefault();delBack();stop();ht=setTimeout(()=>{ht=setInterval(delBack,90)},400)};
+ ['pointerup','pointerleave','pointercancel'].forEach(ev=>d.addEventListener(ev,stop));
  show(PE.cats[0].k);
 }
 function togglePanel(){
@@ -137,9 +163,9 @@ async function poll(){
   const s=$('#cst');if(s)s.textContent=seenTxt(j.peer_last,j.now);
  }catch(e){const s=$('#cst');if(s)s.textContent='در حال اتصال...'}
 }
-function add(ms){
+function add(ms,force){
  const b=$('#msgs');if(!b)return;
- const near=last==0||b.scrollHeight-b.scrollTop-b.clientHeight<120;
+ const near=force||last==0||b.scrollHeight-b.scrollTop-b.clientHeight<120;
  ms.forEach(m=>{if(m.id<=last)return;last=m.id;b.insertAdjacentHTML('beforeend',`<div class="bub ${m.mine?'me':''}" data-id="${m.id}">${PE.render(m.text)}<small>${hm(m.ts)}${m.mine?'<span class="tkw"></span>':''}</small></div>`)});
  if(near)b.scrollTop=b.scrollHeight;
 }
@@ -148,7 +174,7 @@ async function send(){
  const t=ser(ci).replace(/\u200b/g,'').trim();
  if(!t)return;
  const keep=ci.innerHTML;ci.innerHTML='';rng=null;
- try{const j=await api('/api/send',{to:peer.id,text:t});add([j.message]);setTicks()}
+ try{const j=await api('/api/send',{to:peer.id,text:t});add([j.message],true);setTicks()}
  catch(e){toast(e.message);const c2=$('#ci');if(c2)c2.innerHTML=keep}
  const ep=$('#epan'),c3=$('#ci');
  if(ep&&c3&&!ep.classList.contains('on'))c3.focus();

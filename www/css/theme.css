@@ -106,3 +106,8 @@ body.inchat #pe-sheet{bottom:calc(76px + env(safe-area-inset-bottom))}
 :root[data-theme=light] #epan,:root[data-theme=light] #pe-sheet,:root[data-theme=light] .over .glass,:root[data-theme=light] #toast{background:rgba(255,255,255,.97)}
 :root[data-theme=light] .on-dot{border-color:#fff}
 :root[data-theme=light] .bub.me{background:rgba(139,92,246,.22)}
+.ptop{display:flex;align-items:center;gap:6px}
+.ptop .pe-tabs{flex:1}
+.pk{background:none;border:0;color:var(--tx);padding:8px;border-radius:14px;flex:none}
+.pk svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pk:active{background:rgba(139,92,246,.3)}
