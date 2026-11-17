@@ -47,7 +47,7 @@ const item=(u,sub,t,badge,on)=>`<div class="ci" data-id="${u.id}" data-n="${esc(
 const bind=()=>document.querySelectorAll('.ci[data-id]').forEach(e=>e.onclick=()=>openChat(+e.dataset.id,e.dataset.n));
 function render(){
  const el=$('#chats');profile();
- if(!A()){authUI(el);return}
+ if(!A()){authUI(el);if(typeof Gate!=='undefined')Gate.show();return}
  el.innerHTML='<input class="in" id="qs" placeholder="جستجوی کاربر با نام کاربری یا اسم"><div id="clist"></div>';
  $('#qs').oninput=()=>{clearTimeout(st);st=setTimeout(search,300)};
  loadChats();

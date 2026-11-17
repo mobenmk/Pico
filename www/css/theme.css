@@ -78,3 +78,31 @@ body.inchat #pe-sheet{bottom:calc(76px + env(safe-area-inset-bottom))}
 #epan{display:none;height:270px;border-top:1px solid var(--line);background:rgba(14,10,28,.95);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
 #epan.on{display:flex;flex-direction:column}
 #epan .pe-grid{flex:1;max-height:none}
+.hr{display:flex;align-items:center;gap:10px}
+.ib{width:36px;height:36px;border-radius:18px;background:var(--glass);border:1px solid var(--line);color:var(--tx);display:flex;align-items:center;justify-content:center;padding:0}
+.ib svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#gate{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 80% -10%,#2a1456,transparent 50%),var(--bg);overflow:auto}
+.gbox{width:100%;max-width:380px;text-align:center}
+.gbox .in{text-align:right}
+.glogo svg{width:72px;height:72px;display:block;margin:0 auto}
+.lnk{background:none;border:0;color:var(--mu);font:inherit;font-size:13px;margin-top:6px;text-decoration:underline}
+.gridg{display:grid;grid-template-columns:repeat(4,1fr);gap:18px 10px;padding:8px 0}
+.app{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--tx);font:inherit;font-size:12px;padding:0}
+.app svg{width:64px;height:64px;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.4);transition:transform .12s}
+.app:active svg{transform:scale(.92)}
+.app span{direction:ltr}
+.lobby{text-align:center}
+.lobby svg{display:block;margin:0 auto 6px;border-radius:22px}
+.lobby h2{margin:6px 0;direction:ltr}
+.seg{display:flex;gap:8px;margin:14px 0 4px}
+.seg button{flex:1;background:var(--glass);border:1px solid var(--line);color:var(--tx);border-radius:14px;padding:10px;font:inherit}
+.seg button.on{background:rgba(139,92,246,.35);border-color:#8b5cf6}
+.play{background:linear-gradient(135deg,#8b5cf6,#6d28d9)!important;border:0!important;font-weight:700;font-size:17px;padding:14px!important;color:#fff!important}
+#lboard{background:#120a24;border-radius:20px;padding:8px}
+#ldice{background:#120a24;border-radius:18px;padding:4px}
+:root[data-theme=light]{--bg:#f4f1fb;--glass:rgba(255,255,255,.72);--line:rgba(70,40,130,.16);--tx:#1c1530;--mu:#6b6785}
+:root[data-theme=light] body,:root[data-theme=light] #chatv,:root[data-theme=light] #gate{background:radial-gradient(circle at 80% -10%,#e3d6ff,transparent 55%),var(--bg)}
+:root[data-theme=light] nav button.on{color:#4c1d95}
+:root[data-theme=light] #epan,:root[data-theme=light] #pe-sheet,:root[data-theme=light] .over .glass,:root[data-theme=light] #toast{background:rgba(255,255,255,.97)}
+:root[data-theme=light] .on-dot{border-color:#fff}
+:root[data-theme=light] .bub.me{background:rgba(139,92,246,.22)}

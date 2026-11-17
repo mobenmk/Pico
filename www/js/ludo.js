@@ -62,7 +62,7 @@ async function run(){
  }
 }
 function over(p){
- const w=p==0,rw=w?(S.act.length==2?20:30):0;if(w){coins(rw);snd(660,.3,'triangle')}
+ const w=p==0,rw=w?({2:20,3:25,4:30}[S.act.length]):0;if(w){coins(rw);snd(660,.3,'triangle')}
  const d=document.createElement('div');d.className='over';
  d.innerHTML=`<div class="glass"><h2>${w?'بردی':'ربات '+NAMES[p]+' برد'}</h2><p class="mu">${w?'+'+rw+' پیکوین':'دفعه‌ی بعد'}</p><div class="row"><button class="pb" id="again">دوباره</button><button class="pb" id="exit">بازگشت</button></div></div>`;
  document.body.appendChild(d);
@@ -70,15 +70,27 @@ function over(p){
  $('#again').onclick=()=>{d.remove();start(m)};$('#exit').onclick=()=>{d.remove();home()};
 }
 function start(m){
- S={act:m==2?[0,2]:[0,1,2,3],pcs:[0,1,2,3].map(()=>[-1,-1,-1,-1]),i:0,dead:false,extra:false};
+ S={act:m==2?[0,2]:m==3?[0,1,2]:[0,1,2,3],pcs:[0,1,2,3].map(()=>[-1,-1,-1,-1]),i:0,dead:false,extra:false};
  $('#games').innerHTML=`<div class="lhead"><button class="lb" id="lback">بازگشت</button><span id="lturn"></span></div><div id="lboard"><svg viewBox="0 0 15 15">${board()}</svg></div><div class="ldock"><button id="ldice">${dice(1,COLS[0])}</button><div id="lmsg" class="mu"></div></div>`;
  $('#lback').onclick=home;draw();run();
 }
+function icon(sz){
+ const q=[[10,10,0],[36,10,1],[36,36,2],[10,36,3]].map(([x,y,p])=>`<rect x="${x}" y="${y}" width="18" height="18" rx="5" fill="${COLS[p]}"/><circle cx="${x+9}" cy="${y+9}" r="4.2" fill="#fff" fill-opacity=".9"/>`).join('');
+ return `<svg viewBox="0 0 64 64" width="${sz}" height="${sz}"><defs><linearGradient id="lkg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b1d7a"/><stop offset="1" stop-color="#0d0719"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#lkg)"/>${q}<rect x="22" y="22" width="20" height="20" rx="6" fill="#fff"/><circle cx="28" cy="28" r="2.2" fill="#1b0c3e"/><circle cx="32" cy="32" r="2.2" fill="#1b0c3e"/><circle cx="36" cy="36" r="2.2" fill="#1b0c3e"/></svg>`;
+}
+function grid(){
+ if(S)S.dead=true;S=null;
+ $('#games').innerHTML=`<div class="gridg"><button class="app" id="app-ludo">${icon(64)}<span>Ludoko</span></button></div>`;
+ $('#app-ludo').onclick=home;
+}
 function home(){
  if(S)S.dead=true;S=null;
- $('#games').innerHTML=`<div class="glass"><b>لودو</b><p class="mu">بدون اینترنت و بدون سرور بازی کن</p><div class="row"><button class="pb" data-m="2">۲ نفره با ربات</button><button class="pb" data-m="4">۴ نفره با ربات</button></div></div><div class="glass mu">بازی آنلاین بعد از ساخت سرور (بخش ۵) اضافه می‌شه</div>`;
- document.querySelectorAll('.pb[data-m]').forEach(b=>b.onclick=()=>start(+b.dataset.m));
+ const m=store.get('ludoMode',2),fa={2:'۲',3:'۳',4:'۴'};
+ $('#games').innerHTML=`<div class="lhead"><button class="lb" id="lback">بازگشت</button><span class="mu">Ludoko</span></div><div class="glass lobby">${icon(88)}<h2>Ludoko</h2><p class="mu">لودو بدون اینترنت و بدون سرور، با ربات</p><div class="seg">${[2,3,4].map(n=>`<button data-m="${n}" class="${n==m?'on':''}">${fa[n]} نفره</button>`).join('')}</div><button class="pb play" id="lplay">بازی کن</button></div><div class="glass mu">بازی آنلاین بعد از ساخت سرور اضافه می‌شه</div>`;
+ $('#lback').onclick=grid;
+ document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{store.set('ludoMode',+b.dataset.m);document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x==b))});
+ $('#lplay').onclick=()=>start(store.get('ludoMode',2));
 }
-home();
-return{home,start};
+grid();
+return{home,start,grid};
 })();

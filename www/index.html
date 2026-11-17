@@ -1,15 +1,15 @@
 <!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script>try{if(JSON.parse(localStorage.getItem("picko_theme"))==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
 <link rel="stylesheet" href="css/theme.css"></head><body>
 <div id="bar">مشکل از سرور</div>
-<header><h1 id="title"></h1><span class="coins"><b id="coinn">0</b> پیکوین</span></header>
+<header><h1 id="title"></h1><div class="hr"><button id="thm" class="ib"></button><span class="coins"><b id="coinn">0</b> پیکوین</span></div></header>
 <main>
 <section id="chats" class="page"><div class="glass empty">برای دیدن چت‌ها سرور لازمه</div></section>
 <section id="contacts" class="page"><div class="glass empty">مخاطبینی نداری</div></section>
 <section id="games" class="page"></section>
 <section id="menu" class="page"><div class="glass">وضعیت سرور: <b id="srv">...</b></div>
-<div class="glass"><b>آزمایش ایموجی</b><div id="demo" class="demo"></div>
-<div class="row"><input id="demoin" placeholder="بنویس..."><button id="emobtn"></button><button id="sendbtn">ارسال</button></div></div></section>
+</section>
 </main>
 <nav>
 <button data-t="chats"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-6 4z"/></svg>چت‌ها</button>
@@ -21,6 +21,8 @@
 <script src="js/emoji.js"></script>
 <script src="js/app.js"></script>
 <script src="js/ludo.js"></script>
+<script src="js/gate.js"></script>
 <script src="js/chat.js"></script>
 <script src="js/back.js"></script>
+<script src="js/theme.js"></script>
 </body></html>
