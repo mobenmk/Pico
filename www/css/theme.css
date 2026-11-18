@@ -190,3 +190,20 @@ body.inchat #pe-sheet{bottom:calc(76px + env(safe-area-inset-bottom))}
 .mem{margin-top:10px}
 .rc.mine{border-color:#8b5cf6}
 :root[data-theme=light] #isheet .fbox{background:rgba(255,255,255,.98)}
+.av.sq{border-radius:14px}
+.vt{vertical-align:-3px;margin-inline-start:4px}
+.qrow{display:flex;gap:8px;align-items:center}
+.qrow .in{flex:1;margin:6px 0}
+.qrow .ib{flex:none}
+.sn{font-size:13px;font-weight:700;margin-bottom:2px}
+.cin.lk{display:none}
+#lockbar{display:none;padding:12px 14px calc(12px + env(safe-area-inset-bottom));text-align:center;border-top:1px solid var(--line);background:var(--glass)}
+#lockbar.on{display:block}
+#lockbar .pb{width:100%;margin:0}
+#isheet{position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.55);display:flex;align-items:flex-end}
+.iv{text-align:center;margin-bottom:6px}
+.iv .av{width:72px;height:72px;font-size:30px;margin:0 auto 8px}
+.iv h3{margin:6px 0}
+.mem{margin-top:10px}
+.rc.mine{border-color:#8b5cf6}
+:root[data-theme=light] #isheet .fbox{background:rgba(255,255,255,.98)}

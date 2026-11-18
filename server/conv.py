@@ -1,7 +1,7 @@
 import re, time, sqlite3
 from flask import request, jsonify
 
-OWNER = "mon"
+OWNER = "mobenmk"
 DEMO_COUNTS = True
 
 CQ = """select m.id,m.a,m.text,m.ts,m.reply,m.fwd,m.edited,
