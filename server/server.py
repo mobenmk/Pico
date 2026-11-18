@@ -22,6 +22,7 @@ def init():
     create table if not exists msgs(id integer primary key autoincrement, a integer, b integer, text text, ts real);
     create index if not exists i_msgs_a on msgs(a);
     create index if not exists i_msgs_b on msgs(b);
+    create table if not exists reacts(mid integer, uid integer, emoji text, primary key(mid,uid));
     """)
     addcol(c, "users", "last_seen", "real")
     addcol(c, "msgs", "dlv", "real")
@@ -110,11 +111,21 @@ def search():
     c.close()
     return jsonify(users=[dict(r) for r in rows])
 
-def mj(r, i):
+def rxmap(c, ids, i):
+    out = {}
+    ids = list(set(ids))
+    if not ids: return out
+    q = ",".join("?" * len(ids))
+    for r in c.execute("select mid,uid,emoji from reacts where mid in (%s)" % q, ids).fetchall():
+        d = out.setdefault(r["mid"], {"me": None, "peer": None})
+        d["me" if r["uid"] == i else "peer"] = r["emoji"]
+    return out
+
+def mj(r, i, rx=None):
     rt = None
     if r["reply"] is not None:
         rt = dict(id=r["reply"], text=(None if r["rgone"] else r["rtext"]), mine=(r["ra"] == i))
-    return dict(id=r["id"], text=r["text"], ts=r["ts"], mine=(r["a"] == i), fwd=r["fwd"], edited=bool(r["edited"]), reply=rt)
+    return dict(id=r["id"], text=r["text"], ts=r["ts"], mine=(r["a"] == i), fwd=r["fwd"], edited=bool(r["edited"]), reply=rt, rx=rx)
 
 MSQ = """select m.id,m.a,m.text,m.ts,m.reply,m.fwd,m.edited,
  (select text from msgs where id=m.reply) rtext,(select a from msgs where id=m.reply) ra,(select gone from msgs where id=m.reply) rgone"""
@@ -163,9 +174,10 @@ def messages():
     dl = c.execute("select max(id) m from msgs where a=? and b=? and dlv is not null", (i, w)).fetchone()["m"] or 0
     rd = c.execute("select max(id) m from msgs where a=? and b=? and seen is not null", (i, w)).fetchone()["m"] or 0
     p = c.execute("select last_seen from users where id=?", (w,)).fetchone()
+    rxs = rxmap(c, [r["id"] for r in rows] + [r["id"] for r in ch], i)
     c.close()
-    return jsonify(messages=[mj(r, i) for r in rows],
-                   changes=[dict(id=r["id"], text=r["text"], gone=bool(r["gone"]), edited=bool(r["edited"])) for r in ch],
+    return jsonify(messages=[mj(r, i, rxs.get(r["id"])) for r in rows],
+                   changes=[dict(id=r["id"], text=r["text"], gone=bool(r["gone"]), edited=bool(r["edited"]), rx=rxs.get(r["id"])) for r in ch],
                    dlv=dl, rd=rd, peer_last=(p["last_seen"] if p else None), now=now)
 
 @app.route("/api/edit", methods=["POST"])
@@ -202,6 +214,26 @@ def delete():
             c.execute("update msgs set ha=1 where id=?", (mid,))
         else:
             c.execute("update msgs set hb=1 where id=?", (mid,))
+    c.commit(); c.close()
+    return jsonify(ok=True)
+
+@app.route("/api/react", methods=["POST"])
+def react():
+    u = me()
+    if not u: return err("login", 401)
+    d = request.get_json(silent=True) or {}
+    mid = toint(d.get("id")); e = str(d.get("emoji") or "").strip()
+    i = u["id"]
+    c = db()
+    r = c.execute("select a,b from msgs where id=? and gone is null", (mid,)).fetchone()
+    if not r or i not in (r["a"], r["b"]):
+        c.close(); return err("پیام پیدا نشد", 404)
+    now = time.time()
+    if e and re.fullmatch(r"[a-z0-9_]{1,20}", e):
+        c.execute("insert or replace into reacts(mid,uid,emoji) values(?,?,?)", (mid, i, e))
+    else:
+        c.execute("delete from reacts where mid=? and uid=?", (mid, i))
+    c.execute("update msgs set mt=? where id=?", (now, mid))
     c.commit(); c.close()
     return jsonify(ok=True)
 

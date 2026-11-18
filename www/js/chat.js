@@ -140,7 +140,7 @@ function bub(m){
  MS.set(m.id,m);
  const f=m.fwd?`<div class="fw">هدایت‌شده از ${esc(m.fwd)}</div>`:'';
  const r=m.reply?`<div class="rp" data-r="${m.reply.id}"><b>${m.reply.mine?'تو':esc(peer.name)}</b><span>${m.reply.text==null?'پیام حذف شده':PE.render(m.reply.text.slice(0,100))}</span></div>`:'';
- return `<div class="bub ${m.mine?'me':''}" data-id="${m.id}">${f}${r}<div class="bt">${PE.render(m.text)}</div><small><span class="ed">${m.edited?'ویرایش‌شده ':''}</span>${hm(m.ts)}${m.mine?'<span class="tkw"></span>':''}</small></div>`;
+ return `<div class="bub ${m.mine?'me':''}" data-id="${m.id}"><span class="swi">${I.reply}</span>${f}${r}<div class="bt">${PE.render(m.text)}</div><div class="rxw">${rxHtml(m)}</div><small><span class="ed">${m.edited?'ویرایش‌شده ':''}</span><span class="tm">${hm(m.ts)}</span>${m.mine?'<span class="tkw"></span>':''}<svg class="mo" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></small></div>`;
 }
 function add(ms,force){
  const b=$('#msgs');if(!b)return;
@@ -153,9 +153,9 @@ function applyCh(ch){
  ch.forEach(c=>{
   if(c.gone){rm(c.id);return}
   const m=MS.get(c.id);if(!m)return;
-  m.text=c.text;m.edited=c.edited;
+  m.text=c.text;m.edited=c.edited;if('rx' in c)m.rx=c.rx;
   const b=document.querySelector('#msgs .bub[data-id="'+c.id+'"]');
-  if(b){b.querySelector('.bt').innerHTML=PE.render(c.text);b.querySelector('.ed').textContent=c.edited?'ویرایش‌شده ':''}
+  if(b){b.querySelector('.bt').innerHTML=PE.render(c.text);b.querySelector('.ed').textContent=c.edited?'ویرایش‌شده ':'';b.querySelector('.rxw').innerHTML=rxHtml(m)}
  });
  if(ch.length)paint();
 }
@@ -259,41 +259,76 @@ function delDlg(list){
  if(allMine)$('#d2').onclick=()=>go(true);
 }
 function jump(id){const el=document.querySelector('#msgs .bub[data-id="'+id+'"]');if(!el)return;el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1200)}
+function rxHtml(m){
+ const r=m.rx||{},a=r.me,b=r.peer;if(!a&&!b)return '';
+ const chip=(n,c)=>`<span class="rc">${PE.svg(n,16)}${c>1?'<i>'+c.toLocaleString('fa-IR')+'</i>':''}</span>`;
+ if(a&&b&&a==b)return `<div class="rx">${chip(a,2)}</div>`;
+ return `<div class="rx">${a?chip(a,1):''}${b?chip(b,1):''}</div>`;
+}
+function refreshRx(id){
+ const m=MS.get(id),b=document.querySelector('#msgs .bub[data-id="'+id+'"]');
+ if(!m||!b)return;
+ const w=b.querySelector('.rxw');w.innerHTML=rxHtml(m);
+ const c=w.querySelector('.rc');if(c)c.classList.add('pop');
+}
+async function react(id){
+ const e=store.get('dtap','heart_red');if(!e)return;
+ const m=MS.get(id);if(!m)return;
+ const nw=(m.rx&&m.rx.me==e)?null:e;
+ try{
+  await api('/api/react',{id,emoji:nw});
+  m.rx=Object.assign({me:null,peer:null},m.rx,{me:nw});
+  refreshRx(id);if(navigator.vibrate)navigator.vibrate(10);
+ }catch(x){toast(x.message)}
+}
+let lastTap={id:0,t:0};
 function gestures(){
  const box=$('#msgs');let g=null;
- box.addEventListener('pointerdown',e=>{
-  const b=e.target.closest('.bub');if(!b)return;
-  lpDone=false;
-  g={b,x:e.clientX,y:e.clientY,dx:0,sw:false,id:e.pointerId};
+ box.addEventListener('touchstart',e=>{
+  const b=e.target.closest('.bub');
+  if(!b||e.touches.length>1){g=null;return}
+  const t=e.touches[0];lpDone=false;
+  g={b,x:t.clientX,y:t.clientY,dx:0,sw:false,dec:false,hit:false};
   g.t=setTimeout(()=>{if(g&&!g.sw){lpDone=true;lp(b)}},450);
- });
- box.addEventListener('pointermove',e=>{
-  if(!g||e.pointerId!=g.id)return;
-  const dx=e.clientX-g.x,dy=e.clientY-g.y;
-  if(!g.sw){
-   if(Math.abs(dx)<=10&&Math.abs(dy)<=10)return;
-   clearTimeout(g.t);
-   if(dx<0&&Math.abs(dx)>Math.abs(dy)&&!sel.size)g.sw=true;else{g=null;return}
+ },{passive:true});
+ box.addEventListener('touchmove',e=>{
+  if(!g)return;
+  const t=e.touches[0],dx=t.clientX-g.x,dy=t.clientY-g.y;
+  if(!g.dec){
+   if(Math.abs(dx)<8&&Math.abs(dy)<8)return;
+   g.dec=true;clearTimeout(g.t);
+   if(dx<0&&Math.abs(dx)>Math.abs(dy)*0.8&&!sel.size)g.sw=true;else{g=null;return}
   }
-  g.dx=Math.max(dx,-90);g.b.style.transition='none';g.b.style.transform='translateX('+g.dx+'px)';
- });
+  g.dx=Math.max(dx,-90);
+  g.b.style.transition='none';g.b.style.transform='translateX('+g.dx+'px)';
+  const s=g.b.querySelector('.swi');if(s)s.style.opacity=Math.min(1,-g.dx/50);
+  if(!g.hit&&g.dx<-50){g.hit=true;if(navigator.vibrate)navigator.vibrate(10)}
+ },{passive:true});
  const end=()=>{
   if(!g)return;clearTimeout(g.t);
-  if(g.sw){g.b.style.transition='transform .2s';g.b.style.transform='';if(g.dx<-60)swipeReply(+g.b.dataset.id)}
+  if(g.sw){
+   const b=g.b;b.style.transition='transform .2s';b.style.transform='';
+   const s=b.querySelector('.swi');if(s)s.style.opacity=0;
+   if(g.dx<-50)swipeReply(+b.dataset.id);
+  }
   g=null;
  };
- box.addEventListener('pointerup',end);box.addEventListener('pointercancel',end);
+ box.addEventListener('touchend',end);box.addEventListener('touchcancel',end);
  box.addEventListener('click',e=>{
   const b=e.target.closest('.bub');
   if(!b){closeMenu();return}
   if(lpDone){lpDone=false;return}
-  if(sel.size){toggle(+b.dataset.id);return}
+  const id=+b.dataset.id;
+  if(sel.size){toggle(id);return}
+  if(e.target.closest('small')){lp(b);return}
+  const n=Date.now();
+  if(lastTap.id==id&&n-lastTap.t<320){lastTap={id:0,t:0};react(id);return}
+  lastTap={id,t:n};
   const rp=e.target.closest('.rp');if(rp)jump(+rp.dataset.r);
  });
  box.addEventListener('scroll',closeMenu);
  box.addEventListener('contextmenu',e=>e.preventDefault());
 }
-/* ---------- صفحه‌ی چت ---------- */
 function openChat(id,name){
  if(open)return;
  peer={id,name};last=0;dl=0;rd=0;since=0;rng=null;replyTo=null;editing=null;sel.clear();MS.clear();open=true;document.body.classList.add('inchat');

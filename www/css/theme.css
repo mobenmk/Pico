@@ -138,3 +138,14 @@ body.inchat #pe-sheet{bottom:calc(76px + env(safe-area-inset-bottom))}
 .fh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .over{z-index:40}
 :root[data-theme=light] #cmenu,:root[data-theme=light] .fbox{background:rgba(255,255,255,.98)}
+#msgs{overflow-x:hidden}
+.bub small{display:flex;align-items:center;gap:4px;padding-top:4px;min-height:24px}
+.bub small .mo{width:14px;height:14px;fill:currentColor;opacity:.55;margin-inline-start:auto;padding-inline-start:12px;box-sizing:content-box}
+.swi{position:absolute;left:100%;top:50%;margin-left:10px;width:24px;height:24px;transform:translateY(-50%);opacity:0;color:var(--mu);pointer-events:none}
+.swi svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.rx{display:flex;gap:6px;margin-top:4px}
+.rc{display:inline-flex;align-items:center;gap:3px;background:rgba(139,92,246,.22);border:1px solid var(--line);border-radius:12px;padding:2px 6px;font-size:11px}
+.rc i{font-style:normal}
+.rc.pop{animation:pp .3s}
+@keyframes pp{0%{transform:scale(.4)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+.srow{display:flex;justify-content:space-between;align-items:center;margin:12px 0}
