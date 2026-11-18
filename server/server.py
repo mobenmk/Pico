@@ -258,5 +258,8 @@ def chats():
                         mine=(r["a"] == i), st=st, unread=r["unread"], last_seen=r["last_seen"]))
     return jsonify(chats=out, now=now)
 
+import conv
+conv.setup(app, db, me, err, toint)
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, threaded=True)
