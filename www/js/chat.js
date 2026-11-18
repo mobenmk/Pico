@@ -188,21 +188,21 @@ function lp(b){
  sel.add(+b.dataset.id);paint();showMenu(b);
  if(navigator.vibrate)navigator.vibrate(12);
 }
-function closeMenu(){const e=$('#cmenu');if(e)e.remove()}
+function closeMenu(){const e=document.querySelector('#cmenu:not(.out)');if(e){e.classList.add('out');setTimeout(()=>e.remove(),160)}}
 function showMenu(b){
  closeMenu();
  const m=MS.get(+b.dataset.id);if(!m)return;
  const items=[['پاسخ',aReply],['کپی',aCopy],['هدایت',aFwd]];
  if(m.mine)items.push(['ویرایش',aEdit]);
  items.push(['حذف',aDel,'dg']);
- const el=document.createElement('div');el.id='cmenu';
+ const el=document.createElement('div');el.id='cmenu';el.className='cmenu';
  el.innerHTML=items.map((x,i)=>`<button data-i="${i}" class="${x[2]||''}">${x[0]}</button>`).join('');
  $('#chatv').appendChild(el);
  el.onclick=e=>{const bt=e.target.closest('button');if(bt)items[+bt.dataset.i][1]()};
  const r=b.getBoundingClientRect(),h=el.offsetHeight,w=el.offsetWidth;
  let top=r.bottom+6;if(top+h>innerHeight-10)top=Math.max(10,r.top-h-6);
  const left=Math.min(Math.max(10,r.left+(r.width-w)/2),innerWidth-w-10);
- el.style.top=top+'px';el.style.left=left+'px';
+ el.style.top=top+'px';el.style.left=left+'px';el.style.transformOrigin=(top>=r.bottom?'top':'bottom')+' center';
 }
 function bar(kind,m){
  const el=$('#rbar');if(!el)return;
@@ -282,38 +282,55 @@ async function react(id){
  }catch(x){toast(x.message)}
 }
 let lastTap={id:0,t:0};
+function bubAt(y){
+ const L=document.querySelectorAll('#msgs .bub');
+ for(const b of L){const r=b.getBoundingClientRect();if(y>=r.top&&y<=r.bottom)return b}
+ return null;
+}
 function gestures(){
- const box=$('#msgs');let g=null;
- box.addEventListener('touchstart',e=>{
-  const b=e.target.closest('.bub');
-  if(!b||e.touches.length>1){g=null;return}
-  const t=e.touches[0];lpDone=false;
-  g={b,x:t.clientX,y:t.clientY,dx:0,sw:false,dec:false,hit:false};
-  g.t=setTimeout(()=>{if(g&&!g.sw){lpDone=true;lp(b)}},450);
+ const v=$('#chatv'),box=$('#msgs');let g=null;
+ v.addEventListener('touchstart',e=>{
+  if(e.touches.length>1||e.target.closest('.cin,#epan,#rbar,#cmenu,.selbar')){g=null;return}
+  const t=e.touches[0],inMsgs=!!e.target.closest('#msgs'),direct=e.target.closest('.bub');
+  lpDone=false;
+  g={x:t.clientX,y:t.clientY,dx:0,mode:'',dec:false,hit:false,b:inMsgs?bubAt(t.clientY):null};
+  if(direct)g.t=setTimeout(()=>{if(g&&!g.mode){lpDone=true;lp(direct)}},450);
  },{passive:true});
- box.addEventListener('touchmove',e=>{
+ v.addEventListener('touchmove',e=>{
   if(!g)return;
   const t=e.touches[0],dx=t.clientX-g.x,dy=t.clientY-g.y;
   if(!g.dec){
    if(Math.abs(dx)<8&&Math.abs(dy)<8)return;
    g.dec=true;clearTimeout(g.t);
-   if(dx<0&&Math.abs(dx)>Math.abs(dy)*0.8&&!sel.size)g.sw=true;else{g=null;return}
+   if(Math.abs(dx)>Math.abs(dy)*0.8&&!sel.size){
+    if(dx<0&&g.b)g.mode='reply';
+    else if(dx>0)g.mode='back';
+   }
+   if(!g.mode){g=null;return}
   }
-  g.dx=Math.max(dx,-90);
-  g.b.style.transition='none';g.b.style.transform='translateX('+g.dx+'px)';
-  const s=g.b.querySelector('.swi');if(s)s.style.opacity=Math.min(1,-g.dx/50);
-  if(!g.hit&&g.dx<-50){g.hit=true;if(navigator.vibrate)navigator.vibrate(10)}
+  if(g.mode=='reply'){
+   g.dx=Math.max(dx,-90);
+   g.b.style.transition='none';g.b.style.transform='translateX('+g.dx+'px)';
+   const s=g.b.querySelector('.swi');if(s)s.style.opacity=Math.min(1,-g.dx/50);
+   if(!g.hit&&g.dx<-50){g.hit=true;if(navigator.vibrate)navigator.vibrate(10)}
+  }else{
+   g.dx=Math.max(0,dx);
+   v.style.animation='none';v.style.transition='none';v.style.transform='translateX('+g.dx+'px)';
+  }
  },{passive:true});
  const end=()=>{
   if(!g)return;clearTimeout(g.t);
-  if(g.sw){
+  if(g.mode=='reply'){
    const b=g.b;b.style.transition='transform .2s';b.style.transform='';
    const s=b.querySelector('.swi');if(s)s.style.opacity=0;
    if(g.dx<-50)swipeReply(+b.dataset.id);
+  }else if(g.mode=='back'){
+   if(g.dx>Math.min(110,innerWidth*0.3))closeChat();
+   else{v.style.transition='transform .22s';v.style.transform=''}
   }
   g=null;
  };
- box.addEventListener('touchend',end);box.addEventListener('touchcancel',end);
+ v.addEventListener('touchend',end);v.addEventListener('touchcancel',end);
  box.addEventListener('click',e=>{
   const b=e.target.closest('.bub');
   if(!b){closeMenu();return}
@@ -331,7 +348,7 @@ function gestures(){
 }
 function openChat(id,name){
  if(open)return;
- peer={id,name};last=0;dl=0;rd=0;since=0;rng=null;replyTo=null;editing=null;sel.clear();MS.clear();open=true;document.body.classList.add('inchat');
+ {const o=$('#chatv');if(o)o.remove()}peer={id,name};last=0;dl=0;rd=0;since=0;rng=null;replyTo=null;editing=null;sel.clear();MS.clear();open=true;document.body.classList.add('inchat');
  const v=document.createElement('div');v.id='chatv';
  v.innerHTML=`<div class="chead"><button class="lb" id="cb">بازگشت</button><div class="t"><b>${esc(name)}</b><small id="cst"></small></div></div><div class="selbar"><button class="pk" id="sax">${I.x}</button><b id="scount"></b><span class="sp"></span><button class="pk" id="sa-reply">${I.reply}</button><button class="pk" id="sa-edit">${I.edit}</button><button class="pk" id="sa-copy">${I.copy}</button><button class="pk" id="sa-fwd">${I.fwd}</button><button class="pk" id="sa-del">${I.del}</button></div><div id="msgs"></div><div id="rbar"></div><div class="row cin"><button id="ce"></button><div id="ci" contenteditable="true" dir="auto" data-ph="پیام..."></div><button id="cs">ارسال</button></div><div id="epan"></div>`;
  document.body.appendChild(v);
@@ -361,8 +378,12 @@ function back(){
 }
 function closeChat(){
  if(!open)return;open=false;clearInterval(timer);
- ['#chatv','#cmenu','#fs','#dd'].forEach(s=>{const e=$(s);if(e)e.remove()});
- document.body.classList.remove('inchat');peer=null;sel.clear();MS.clear();replyTo=null;editing=null;loadChats();
+ const v=$('#chatv');
+ ['#cmenu','#fs','#dd'].forEach(x=>{const e=$(x);if(e)e.remove()});
+ document.body.classList.remove('inchat');
+ peer=null;sel.clear();MS.clear();replyTo=null;editing=null;
+ if(v){v.style.animation='';v.style.pointerEvents='none';v.classList.add('out');setTimeout(()=>v.remove(),270)}
+ loadChats();
 }
 async function poll(){
  if(!peer)return;const pid=peer.id;
