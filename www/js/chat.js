@@ -1,5 +1,5 @@
 const Chat=(()=>{
-let peer=null,last=0,dl=0,rd=0,since=0,timer=null,open=false,st=null,rng=null,replyTo=null,editing=null,lpDone=false;
+let prevUnread=null,menuId=0,peer=null,last=0,dl=0,rd=0,since=0,timer=null,open=false,st=null,rng=null,replyTo=null,editing=null,lpDone=false;
 const sel=new Set(),MS=new Map();
 const A=()=>store.get('auth',null);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -17,6 +17,24 @@ const I={
 };
 const KN=new Set(PE.list.map(e=>e.n));
 const U={smile:'🙂',grin:'😁',laugh:'😆',joy:'😂',wink:'😉',love:'😍',cool:'😎',tongue:'😜',blush:'😊',think:'🤔',neutral:'😐',sweat:'😅',sad:'😞',cry:'😢',angry:'😠',wow:'😮',sleepy:'😴',dizzy:'😵',heart_red:'❤️',heart_pink:'🩷',heart_orange:'🧡',heart_yellow:'💛',heart_green:'💚',heart_blue:'💙',heart_purple:'💜',heart_black:'🖤',heart_white:'🤍',thumb:'👍',star:'⭐',bolt:'⚡',fire:'🔥',sparkle:'✨',check:'✅',cross:'❌',sun:'☀️',moon:'🌙',cloud:'☁️',drop:'💧',flower:'🌸',leaf:'🍃',apple:'🍎',cherry:'🍒',gift:'🎁',crown:'👑',gem:'💎',bell:'🔔',coin:'🪙',gamepad:'🎮'};
+let ac=null;
+function beep(ns){
+ try{
+  ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+  if(ac.state==='suspended')ac.resume();
+  let t=ac.currentTime;
+  ns.forEach(([f,d])=>{
+   const o=ac.createOscillator(),g=ac.createGain();
+   o.type='sine';o.frequency.value=f;
+   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.16,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+   o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d+.02);
+   t+=d*.8;
+  });
+ }catch(e){}
+}
+const sndOn=()=>store.get('snd',true)!==false;
+const sndSend=()=>{if(sndOn())beep([[620,.07],[880,.1]])};
+const sndIn=()=>{if(sndOn())beep([[988,.09],[1319,.16]])};
 function seenTxt(l,n){
  if(!l)return 'مدتی پیش';
  if(n-l<12)return 'آنلاین';
@@ -71,7 +89,7 @@ async function search(){
 }
 async function loadChats(){
  if(!A())return;
- try{const j=await api('/api/chats');const l=$('#clist');if(!l||($('#qs')&&$('#qs').value.trim()))return;
+ try{const j=await api('/api/chats');{const tot=j.chats.reduce((a,c)=>a+c.unread,0);if(prevUnread!==null&&tot>prevUnread)sndIn();prevUnread=tot}const l=$('#clist');if(!l||($('#qs')&&$('#qs').value.trim()))return;
   l.innerHTML=j.chats.length?j.chats.map(c=>item(c,(c.mine?tick(c.st)+' ':'')+PE.render(c.text.slice(0,80)),hm(c.ts),c.unread,j.now-c.last_seen<12)).join(''):'<div class="glass empty">هنوز چتی نداری. بالا دنبال یه نفر بگرد</div>';bind()}
  catch(e){}
 }
@@ -166,7 +184,7 @@ function setTicks(){
  });
 }
 /* ---------- انتخاب و منو ---------- */
-const ids=()=>[...sel].sort((a,b)=>a-b);
+const ids=()=>sel.size?[...sel].sort((a,b)=>a-b):(menuId?[menuId]:[]);
 const focusC=()=>{const c=$('#ci');if(c)c.focus()};
 function paint(){
  document.querySelectorAll('#msgs .bub').forEach(b=>b.classList.toggle('sel',sel.has(+b.dataset.id)));
@@ -178,7 +196,7 @@ function paint(){
   $('#sa-reply').style.display=one?'':'none';
   $('#sa-edit').style.display=(one&&m&&m.mine)?'':'none';
  }
- if(sel.size!=1)closeMenu();
+ if(sel.size!=1&&!menuId)closeMenu();
 }
 const clearSel=()=>{sel.clear();paint()};
 const toggle=id=>{if(sel.has(id))sel.delete(id);else sel.add(id);paint()};
@@ -188,17 +206,17 @@ function lp(b){
  sel.add(+b.dataset.id);paint();showMenu(b);
  if(navigator.vibrate)navigator.vibrate(12);
 }
-function closeMenu(){const e=document.querySelector('#cmenu:not(.out)');if(e){e.classList.add('out');setTimeout(()=>e.remove(),160)}}
-function showMenu(b){
+function closeMenu(){const e=document.querySelector('#cmenu:not(.out)');if(e){e.classList.add('out');setTimeout(()=>e.remove(),160)}menuId=0}
+function showMenu(b,only){
  closeMenu();
- const m=MS.get(+b.dataset.id);if(!m)return;
+ const m=MS.get(+b.dataset.id);if(!m)return;menuId=only?+b.dataset.id:0;
  const items=[['پاسخ',aReply],['کپی',aCopy],['هدایت',aFwd]];
  if(m.mine)items.push(['ویرایش',aEdit]);
  items.push(['حذف',aDel,'dg']);
  const el=document.createElement('div');el.id='cmenu';el.className='cmenu';
  el.innerHTML=items.map((x,i)=>`<button data-i="${i}" class="${x[2]||''}">${x[0]}</button>`).join('');
  $('#chatv').appendChild(el);
- el.onclick=e=>{const bt=e.target.closest('button');if(bt)items[+bt.dataset.i][1]()};
+ el.onclick=e=>{const bt=e.target.closest('button');if(bt){items[+bt.dataset.i][1]();closeMenu()}};
  const r=b.getBoundingClientRect(),h=el.offsetHeight,w=el.offsetWidth;
  let top=r.bottom+6;if(top+h>innerHeight-10)top=Math.max(10,r.top-h-6);
  const left=Math.min(Math.max(10,r.left+(r.width-w)/2),innerWidth-w-10);
@@ -332,12 +350,13 @@ function gestures(){
  };
  v.addEventListener('touchend',end);v.addEventListener('touchcancel',end);
  box.addEventListener('click',e=>{
-  const b=e.target.closest('.bub');
-  if(!b){closeMenu();return}
+  let b=e.target.closest('.bub');const row=!b;
+  if(row)b=bubAt(e.clientY);
+  if(!b)return;
   if(lpDone){lpDone=false;return}
   const id=+b.dataset.id;
   if(sel.size){toggle(id);return}
-  if(e.target.closest('small')){lp(b);return}
+  if(!row&&e.target.closest('small')){showMenu(b,true);return}
   const n=Date.now();
   if(lastTap.id==id&&n-lastTap.t<320){lastTap={id:0,t:0};react(id);return}
   lastTap={id,t:n};
@@ -371,6 +390,7 @@ function openChat(id,name){
 function back(){
  if(!open)return false;
  const x=$('#fs')||$('#dd');if(x){x.remove();return true}
+ if(document.querySelector('#cmenu:not(.out)')&&!sel.size){closeMenu();return true}
  if(sel.size){clearSel();return true}
  const p=$('#epan');
  if(p&&p.classList.contains('on')){p.classList.remove('on');return true}
@@ -382,7 +402,7 @@ function closeChat(){
  ['#cmenu','#fs','#dd'].forEach(x=>{const e=$(x);if(e)e.remove()});
  document.body.classList.remove('inchat');
  peer=null;sel.clear();MS.clear();replyTo=null;editing=null;
- if(v){v.style.animation='';v.style.pointerEvents='none';v.classList.add('out');setTimeout(()=>v.remove(),270)}
+ if(v){v.style.animation='';v.style.pointerEvents='none';v.classList.add('out');setTimeout(()=>v.remove(),180)}
  loadChats();
 }
 async function poll(){
@@ -391,7 +411,7 @@ async function poll(){
   const vis=document.visibilityState==='visible'?'&seen=1':'';
   const j=await api('/api/messages?with='+pid+'&after='+last+'&since='+Math.max(0,since-1)+vis);
   if(!peer||peer.id!=pid)return;
-  dl=j.dlv;rd=j.rd;since=j.now;
+  dl=j.dlv;rd=j.rd;since=j.now;if(last>0&&j.messages.some(m=>!m.mine&&m.id>last))sndIn();
   if(j.messages.length)add(j.messages);
   applyCh(j.changes||[]);
   setTicks();
@@ -405,13 +425,19 @@ async function send(){
  const keep=ci.innerHTML;ci.innerHTML='';rng=null;
  try{
   if(editing){const id=editing;await api('/api/edit',{id,text:t});applyCh([{id,text:t,gone:false,edited:true}])}
-  else{const body={to:peer.id,text:t};if(replyTo)body.reply=replyTo.id;const j=await api('/api/send',body);add([j.message],true);setTicks()}
+  else{const body={to:peer.id,text:t};if(replyTo)body.reply=replyTo.id;const j=await api('/api/send',body);add([j.message],true);setTicks();sndSend()}
   clearBar();
  }catch(e){toast(e.message);const c2=$('#ci');if(c2)c2.innerHTML=keep}
  const ep=$('#epan'),c3=$('#ci');
  if(ep&&c3&&!ep.classList.contains('on'))c3.focus();
 }
 render();
+let swallow=false;
+document.addEventListener('touchstart',e=>{
+ const m=document.querySelector('#cmenu:not(.out)');
+ if(m&&!e.target.closest('#cmenu')){closeMenu();swallow=true;setTimeout(()=>{swallow=false},450)}
+},true);
+document.addEventListener('click',e=>{if(swallow){swallow=false;e.stopPropagation();e.preventDefault()}},true);
 setInterval(()=>{if(A()&&!open)loadChats()},3000);
 return{render,back};
 })();
