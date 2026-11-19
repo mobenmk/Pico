@@ -101,16 +101,40 @@ function pgLang(){
 function pgAbout(){
  sub('درباره',`<div class="mh"><div class="mav">P</div><h2>Picko</h2><p>نسخه‌ی آزمایشی</p></div><div class="mc"><div class="sw"><span>پیام‌رسان شخصی پیکو</span></div></div>`);
 }
-function act(a){
+function aimg(a){return a&&a.id?`<img class="avi" src="${PICKO_SERVER}/api/avatar/${a.id}?v=${store.get('avpv',0)}" onerror="this.remove()">`:''}
+function pickPhoto(){
+ const a=A();
+ if(!a){toast('اول وارد حساب شو');return}
+ const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+ inp.onchange=()=>{
+  const f=inp.files&&inp.files[0];if(!f)return;
+  const url=URL.createObjectURL(f),img=new Image();
+  img.onload=async()=>{
+   const s=Math.min(img.width,img.height),c=document.createElement('canvas');
+   c.width=c.height=256;
+   c.getContext('2d').drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,256,256);
+   URL.revokeObjectURL(url);
+   try{
+    const r=await fetch(PICKO_SERVER+'/api/avatar',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+a.token},body:JSON.stringify({img:c.toDataURL('image/jpeg',0.82)})});
+    if(!r.ok)throw 0;
+    store.set('avpv',Date.now());build();toast('عکس پروفایل عوض شد');
+   }catch(e){toast('آپلود نشد، سرور رو چک کن')}
+  };
+  img.onerror=()=>toast('عکس خونده نشد');
+  img.src=url;
+ };
+ inp.click();
+}
+function act(a){if(a=='cam'){pickPhoto();return}
  if(a=='chat')pgChat();else if(a=='acct')pgAcct();else if(a=='pk')pgPk();else if(a=='eco')pgEco();else if(a=='lang')pgLang();else if(a=='about')pgAbout();
  else toast('به‌زودی');
 }
 function main(){
  const a=A()||{name:'Picko',username:'guest'};
  const ch=esc((a.name||'?')[0]);
- return `<div class="mh"><div class="mav">${ch}<button class="mcam" data-a="soon">${svg(G.cam)}</button></div><h2>${esc(a.name)}</h2><p dir="ltr">@${esc(a.username)}</p></div>
- <div class="mc"><div class="msec">حساب‌های کاربری</div><div class="mr" data-a="acct"><span class="mav2">${ch}</span><div class="mt"><b>${esc(a.name)}</b></div></div>${row('user','#22b8cf','مدیریت حساب‌ها','','soon')}</div>
- <div class="mc">${row('gear','#34c759','تنظیمات پیکو','','pk')}${row('userx','#ff4d6d','حذف کلی حساب کاربری','','soon')}${row('info','#ff9f0a','درباره','','about')}</div>
+ return `<div class="mh"><div class="mav">${aimg(a)}${ch}<button class="mcam" data-a="cam">${svg(G.cam)}</button></div><h2>${esc(a.name)}</h2><p dir="ltr">@${esc(a.username)}</p></div>
+ <div class="mc"><div class="msec">حساب‌های کاربری</div><div class="mr" data-a="acct"><span class="mav2">${aimg(a)}${ch}</span><div class="mt"><b>${esc(a.name)}</b></div></div>${row('user','#22b8cf','مدیریت حساب‌ها','','soon')}</div>
+ <div class="mc">${row('gear','#34c759','تنظیمات پیکو','','pk')}${row('info','#ff9f0a','درباره','','about')}</div>
  <div class="mc">${row('user','#2f9bff','حساب کاربری','اسم، نام کاربری، خروج از حساب','acct')}${row('chat','#ff9f0a','تنظیمات گفتگو','پس‌زمینه، حالت شب، انیمیشن‌ها','chat')}${row('key','#34c759','حریم خصوصی و امنیت','آخرین بازدید، دستگاه‌ها، کلیدهای عبور','soon')}${row('spk','#ff4d6d','اعلان‌ها','صداها، تماس‌ها، نشانگرها','soon')}${row('data','#3b82f6','داده‌ها و ذخیره‌سازی','تنظیمات دانلود رسانه','soon')}${row('folder','#2f9bff','پوشه‌های گفتگو','مرتب‌سازی گفتگوها در پوشه‌ها','soon')}${row('laptop','#22b8cf','دستگاه‌ها','مدیریت دستگاه‌های متصل شده','soon')}${row('bat','#ff9f0a','ذخیره انرژی','کاهش مصرف انرژی در شارژ کم','eco')}${row('globe','#a855f7','زبان','فارسی','lang')}</div>
  <div class="mc"><div class="msec">راهنمایی</div>${row('dots','#ff9f0a','پرسیدن سؤال','','soon')}${row('q','#3b82f6','پرسش‌های متداول پیکو','','soon')}${row('shield','#34c759','سیاست حریم خصوصی','','soon')}</div>`;
 }

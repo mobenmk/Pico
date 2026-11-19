@@ -4,7 +4,7 @@ const sel=new Set(),MS=new Map(),CM={};
 const A=()=>store.get('auth',null);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const hm=t=>{const d=new Date(t*1000);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
-const av=(n,id,k)=>`<i class="av${k?' sq':''}" style="background:${['#7c3aed','#2563eb','#db2777','#059669','#d97706'][id%5]}">${esc((n||'?')[0])}</i>`;
+const av=(n,id,k)=>`<i class="av${k?' sq':''}" style="background:${['#7c3aed','#2563eb','#db2777','#059669','#d97706'][id%5]}">${k?'':`<img class="avi" src="${PICKO_SERVER}/api/avatar/${id}${A()&&A().id==id?'?v='+store.get('avpv',0):''}" onerror="this.remove()">`}${esc((n||'?')[0])}</i>`;
 const tick=s=>`<svg class="tk ${s==2?'rd':''}" viewBox="0 0 18 12" width="16" height="11" fill="none" stroke="#9a9aaa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6.5l3.5 3.5L11 2"/>${s>=1?'<path d="M6 6.5l3.5 3.5L16 2"/>':''}</svg>`;
 const VT='<svg class="vt" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="11" fill="#3b82f6"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const NC=id=>['#a78bfa','#60a5fa','#f472b6','#34d399','#fbbf24','#fb923c'][id%6];
@@ -86,6 +86,7 @@ function render(){
  $('#mk').onclick=createUI;
  loadChats();
 }
+function exitSearch(){const qs=$('#qs');if(!qs)return;qs.value='';qs.blur();loadChats()}
 async function search(){
  const q=$('#qs').value.trim();if(!q){loadChats();return}
  try{
@@ -426,7 +427,7 @@ function openChat(id,name,kind,meta){
  poll();timer=setInterval(poll,2000);
 }
 function back(){
- if(!open)return false;
+ if(!open){const x=$('#fs')||$('#isheet');if(x){x.remove();return true}const qs=$('#qs');if(qs&&$('#chats.on')&&(qs.value||document.activeElement===qs)){exitSearch();return true}return false}
  const x=$('#fs')||$('#dd')||$('#isheet');if(x){x.remove();return true}
  if(document.querySelector('#cmenu:not(.out)')&&!sel.size){closeMenu();return true}
  if(sel.size){clearSel();return true}
@@ -537,6 +538,7 @@ function createUI(){
  };
 }
 render();
+document.addEventListener('click',e=>{const qs=$('#qs');if(qs&&(qs.value||document.activeElement===qs)&&!e.target.closest('#qs,#clist'))exitSearch()});
 let swallow=false;
 document.addEventListener('touchstart',e=>{
  const m=document.querySelector('#cmenu:not(.out)');

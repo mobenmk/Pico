@@ -250,3 +250,11 @@ body.noanim *,body.noanim *::before,body.noanim *::after{animation:none!importan
 :root[data-cbg=rose]:not([data-theme=light]) #chatv{background:radial-gradient(circle at 80% -10%,#5e1030,transparent 55%),var(--bg)}
 :root[data-cbg=black]:not([data-theme=light]) #chatv{background:#000}
 :root[data-theme=light] .spg{background:radial-gradient(circle at 80% -10%,#e3d6ff,transparent 55%),var(--bg)}
+.av{position:relative;overflow:hidden}
+.avi{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mav .avi,.mav2 .avi{border-radius:50%}
+.mav2{position:relative;overflow:hidden}
+#chats #mk{position:fixed;left:18px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:8;width:58px;height:58px;border-radius:50%;border:1px solid rgba(255,255,255,.55);background:linear-gradient(135deg,#a855f7,#22d3ee);color:#fff;box-shadow:0 0 10px #a855f7,0 0 26px rgba(168,85,247,.75),0 0 46px rgba(34,211,238,.45),inset 0 0 10px rgba(255,255,255,.35);animation:neon 2.2s ease-in-out infinite alternate}
+#chats #mk svg{width:28px;height:28px;stroke:#fff;stroke-width:2.6;filter:drop-shadow(0 0 5px #fff)}
+#chats #mk:active{transform:scale(.92)}
+@keyframes neon{from{box-shadow:0 0 8px #a855f7,0 0 18px rgba(168,85,247,.6),0 0 32px rgba(34,211,238,.3),inset 0 0 8px rgba(255,255,255,.3)}to{box-shadow:0 0 14px #c084fc,0 0 34px rgba(168,85,247,.9),0 0 60px rgba(34,211,238,.6),inset 0 0 12px rgba(255,255,255,.45)}}
