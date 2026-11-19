@@ -1,11 +1,13 @@
 const Chat=(()=>{
 let prevUnread=null,menuId=0,peer=null,last=0,dl=0,rd=0,since=0,timer=null,open=false,st=null,rng=null,replyTo=null,editing=null,lpDone=false;
-const sel=new Set(),MS=new Map();
+const sel=new Set(),MS=new Map(),CM={};
 const A=()=>store.get('auth',null);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const hm=t=>{const d=new Date(t*1000);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
-const av=(n,id)=>`<i class="av" style="background:${['#7c3aed','#2563eb','#db2777','#059669','#d97706'][id%5]}">${esc((n||'?')[0])}</i>`;
+const av=(n,id,k)=>`<i class="av${k?' sq':''}" style="background:${['#7c3aed','#2563eb','#db2777','#059669','#d97706'][id%5]}">${esc((n||'?')[0])}</i>`;
 const tick=s=>`<svg class="tk ${s==2?'rd':''}" viewBox="0 0 18 12" width="16" height="11" fill="none" stroke="#9a9aaa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6.5l3.5 3.5L11 2"/>${s>=1?'<path d="M6 6.5l3.5 3.5L16 2"/>':''}</svg>`;
+const VT='<svg class="vt" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="11" fill="#3b82f6"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const NC=id=>['#a78bfa','#60a5fa','#f472b6','#34d399','#fbbf24','#fb923c'][id%6];
 const ic=p=>`<svg viewBox="0 0 24 24">${p}</svg>`;
 const I={
  x:ic('<path d="M6 6l12 12M18 6L6 18"/>'),
@@ -73,25 +75,41 @@ function profile(){
  p.innerHTML=`<div class="ci" style="border:0"><span class="avw">${av(a.name,a.id)}</span><div class="cm"><b>${esc(a.name)}</b><small>@${esc(a.username)}</small></div></div><button class="pb" id="lo">خروج از حساب</button>`;
  $('#lo').onclick=()=>{store.set('auth',null);closeChat();render()};
 }
-const item=(u,sub,t,badge,on)=>`<div class="ci" data-id="${u.id}" data-n="${esc(u.name)}"><span class="avw">${av(u.name,u.id)}${on?'<b class="on-dot"></b>':''}</span><div class="cm"><b>${esc(u.name)}</b><small>${sub}</small></div><div class="cr">${t?'<em>'+t+'</em>':''}${badge?'<span class="badge">'+badge+'</span>':''}</div></div>`;
-const bind=()=>document.querySelectorAll('.ci[data-id]').forEach(e=>e.onclick=()=>openChat(+e.dataset.id,e.dataset.n));
+const item=(u,sub,t,badge,on)=>`<div class="ci" data-id="${u.id}" data-n="${esc(u.name||u.title||'')}" data-k="${u.kind||''}"><span class="avw">${av(u.name||u.title,u.id,u.kind)}${on?'<b class="on-dot"></b>':''}</span><div class="cm"><b>${esc(u.name||u.title||'')}${u.verified?VT:''}</b><small>${sub}</small></div><div class="cr">${t?'<em>'+t+'</em>':''}${badge?'<span class="badge">'+badge+'</span>':''}</div></div>`;
+const bind=()=>document.querySelectorAll('.ci[data-id]').forEach(e=>e.onclick=()=>{const k=e.dataset.k;openChat(+e.dataset.id,e.dataset.n,k,k?CM['c'+e.dataset.id]:null)});
+function cnt(n){n=+n||0;if(n>=1e6)return Number((n/1e6).toFixed(1)).toLocaleString('fa-IR')+' میلیون عضو';return n.toLocaleString('fa-IR')+' عضو'}
 function render(){
  const el=$('#chats');profile();
  if(!A()){authUI(el);if(typeof Gate!=='undefined')Gate.show();return}
- el.innerHTML='<input class="in" id="qs" placeholder="جستجوی کاربر با نام کاربری یا اسم"><div id="clist"></div>';
+ el.innerHTML='<div class="qrow"><input class="in" id="qs" placeholder="جستجوی کاربر، گروه و کانال"><button class="ib" id="mk">'+ic('<path d="M12 5v14M5 12h14"/>')+'</button></div><div id="clist"></div>';
  $('#qs').oninput=()=>{clearTimeout(st);st=setTimeout(search,300)};
+ $('#mk').onclick=createUI;
  loadChats();
 }
 async function search(){
  const q=$('#qs').value.trim();if(!q){loadChats();return}
- try{const j=await api('/api/search?q='+encodeURIComponent(q));$('#clist').innerHTML=j.users.length?j.users.map(u=>item(u,'@'+esc(u.username),'',0,false)).join(''):'<div class="glass empty">کاربری پیدا نشد</div>';bind()}
- catch(e){toast(e.message)}
+ try{
+  const [j,k]=await Promise.all([api('/api/search?q='+encodeURIComponent(q)),api('/api/csearch?q='+encodeURIComponent(q)).catch(()=>({convs:[]}))]);
+  k.convs.forEach(c=>{CM['c'+c.id]=c});
+  const h=k.convs.map(c=>item(c,'@'+esc(c.uname||'')+' · '+cnt(c.members),'',0,false)).concat(j.users.map(u=>item(u,'@'+esc(u.username),'',0,false)));
+  $('#clist').innerHTML=h.length?h.join(''):'<div class="glass empty">پیدا نشد</div>';bind();
+ }catch(e){toast(e.message)}
 }
 async function loadChats(){
  if(!A())return;
- try{const j=await api('/api/chats');{const tot=j.chats.reduce((a,c)=>a+c.unread,0);if(prevUnread!==null&&tot>prevUnread)sndIn();prevUnread=tot}const l=$('#clist');if(!l||($('#qs')&&$('#qs').value.trim()))return;
-  l.innerHTML=j.chats.length?j.chats.map(c=>item(c,(c.mine?tick(c.st)+' ':'')+PE.render(c.text.slice(0,80)),hm(c.ts),c.unread,j.now-c.last_seen<12)).join(''):'<div class="glass empty">هنوز چتی نداری. بالا دنبال یه نفر بگرد</div>';bind()}
- catch(e){}
+ try{
+  const [j,k]=await Promise.all([api('/api/chats'),api('/api/convs').catch(()=>({convs:[]}))]);
+  const tot=j.chats.reduce((a,c)=>a+c.unread,0)+k.convs.reduce((a,c)=>a+c.unread,0);
+  if(prevUnread!==null&&tot>prevUnread)sndIn();
+  prevUnread=tot;
+  const l=$('#clist');if(!l||($('#qs')&&$('#qs').value.trim()))return;
+  k.convs.forEach(c=>{CM['c'+c.id]=c});
+  const rows=[];
+  j.chats.forEach(c=>rows.push({ts:c.ts,h:item(c,(c.mine?tick(c.st)+' ':'')+PE.render(c.text.slice(0,80)),hm(c.ts),c.unread,j.now-c.last_seen<12)}));
+  k.convs.forEach(c=>rows.push({ts:c.ts,h:item(c,(c.sn?esc(c.sn)+': ':'')+PE.render((c.text||'').slice(0,80)),hm(c.ts),c.unread,false)}));
+  rows.sort((a,b)=>b.ts-a.ts);
+  l.innerHTML=rows.length?rows.map(r=>r.h).join(''):'<div class="glass empty">هنوز چتی نداری. بالا دنبال یه نفر بگرد</div>';bind();
+ }catch(e){}
 }
 function ser(n){let s='';n.childNodes.forEach(c=>{if(c.nodeType==3)s+=c.nodeValue;else if(c.classList&&c.classList.contains('ep'))s+=':'+c.dataset.n+':';else if(c.nodeName=='BR')s+='\n';else if(c.nodeName=='DIV')s+='\n'+ser(c);else s+=ser(c)});return s}
 function insertEmoji(n){
@@ -156,9 +174,11 @@ function togglePanel(){
 /* ---------- پیام‌ها ---------- */
 function bub(m){
  MS.set(m.id,m);
+ const conv=peer&&peer.kind;
+ const sn=(conv&&!m.mine)?`<div class="sn" style="color:${NC(m.uid||0)}">${esc(m.sn||'')}</div>`:'';
  const f=m.fwd?`<div class="fw">هدایت‌شده از ${esc(m.fwd)}</div>`:'';
- const r=m.reply?`<div class="rp" data-r="${m.reply.id}"><b>${m.reply.mine?'تو':esc(peer.name)}</b><span>${m.reply.text==null?'پیام حذف شده':PE.render(m.reply.text.slice(0,100))}</span></div>`:'';
- return `<div class="bub ${m.mine?'me':''}" data-id="${m.id}"><span class="swi">${I.reply}</span>${f}${r}<div class="bt">${PE.render(m.text)}</div><div class="rxw">${rxHtml(m)}</div><small><span class="ed">${m.edited?'ویرایش‌شده ':''}</span><span class="tm">${hm(m.ts)}</span>${m.mine?'<span class="tkw"></span>':''}<svg class="mo" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></small></div>`;
+ const r=m.reply?`<div class="rp" data-r="${m.reply.id}"><b>${m.reply.mine?'تو':esc(m.reply.sn||peer.name)}</b><span>${m.reply.text==null?'پیام حذف شده':PE.render(m.reply.text.slice(0,100))}</span></div>`:'';
+ return `<div class="bub ${m.mine?'me':''}" data-id="${m.id}"><span class="swi">${I.reply}</span>${sn}${f}${r}<div class="bt">${PE.render(m.text)}</div><div class="rxw">${rxHtml(m)}</div><small><span class="ed">${m.edited?'ویرایش‌شده ':''}</span><span class="tm">${hm(m.ts)}</span>${(m.mine&&!conv)?'<span class="tkw"></span>':''}<svg class="mo" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></small></div>`;
 }
 function add(ms,force){
  const b=$('#msgs');if(!b)return;
@@ -171,7 +191,7 @@ function applyCh(ch){
  ch.forEach(c=>{
   if(c.gone){rm(c.id);return}
   const m=MS.get(c.id);if(!m)return;
-  m.text=c.text;m.edited=c.edited;if('rx' in c)m.rx=c.rx;
+  m.text=c.text;m.edited=c.edited;if('rx' in c)m.rx=c.rx;if('rxl' in c)m.rxl=c.rxl;
   const b=document.querySelector('#msgs .bub[data-id="'+c.id+'"]');
   if(b){b.querySelector('.bt').innerHTML=PE.render(c.text);b.querySelector('.ed').textContent=c.edited?'ویرایش‌شده ':'';b.querySelector('.rxw').innerHTML=rxHtml(m)}
  });
@@ -225,7 +245,7 @@ function showMenu(b,only){
 function bar(kind,m){
  const el=$('#rbar');if(!el)return;
  el.className='on';
- el.innerHTML=`<div class="rbi"><b>${kind=='r'?'پاسخ به '+(m.mine?'خودت':esc(peer.name)):'ویرایش پیام'}</b><span>${PE.render(m.text.slice(0,120))}</span></div><button class="pk" id="rx">${I.x}</button>`;
+ el.innerHTML=`<div class="rbi"><b>${kind=='r'?'پاسخ به '+(m.mine?'خودت':esc(m.sn||peer.name)):'ویرایش پیام'}</b><span>${PE.render(m.text.slice(0,120))}</span></div><button class="pk" id="rx">${I.x}</button>`;
  $('#rx').onclick=cancelBar;
 }
 function clearBar(){replyTo=null;editing=null;const el=$('#rbar');if(el){el.className='';el.innerHTML=''}}
@@ -249,35 +269,47 @@ async function fwdSheet(list){
  const close=()=>d.remove();
  $('#fx').onclick=close;d.onclick=e=>{if(e.target==d)close()};
  const draw=us=>{
-  $('#fl').innerHTML=us.map(u=>`<div class="ci" data-f="${u.id}"><span class="avw">${av(u.name,u.id)}</span><div class="cm"><b>${esc(u.name)}</b></div></div>`).join('')||'<div class="empty">چیزی پیدا نشد</div>';
-  $('#fl').querySelectorAll('[data-f]').forEach(e=>e.onclick=()=>{close();doFwd(list,+e.dataset.f)});
+  $('#fl').innerHTML=us.map(u=>`<div class="ci" data-f="${u.id}" data-k="${u.k||''}"><span class="avw">${av(u.name,u.id,u.k)}</span><div class="cm"><b>${esc(u.name)}</b></div></div>`).join('')||'<div class="empty">چیزی پیدا نشد</div>';
+  $('#fl').querySelectorAll('[data-f]').forEach(e=>e.onclick=()=>{close();doFwd(list,+e.dataset.f,e.dataset.k)});
  };
- try{draw((await api('/api/chats')).chats)}catch(e){}
+ const base=async()=>{
+  const [a,b]=await Promise.all([api('/api/chats'),api('/api/convs').catch(()=>({convs:[]}))]);
+  return b.convs.filter(c=>c.kind=='group'||c.role=='owner'||c.role=='admin').map(c=>({id:c.id,name:c.title,k:c.kind})).concat(a.chats.map(c=>({id:c.id,name:c.name,k:''})));
+ };
+ try{draw(await base())}catch(e){}
  let t;
  $('#fq').oninput=()=>{clearTimeout(t);t=setTimeout(async()=>{
   const q=$('#fq').value.trim();
-  try{if(!q)draw((await api('/api/chats')).chats);else draw((await api('/api/search?q='+encodeURIComponent(q))).users)}catch(e){}
+  try{if(!q)draw(await base());else draw((await api('/api/search?q='+encodeURIComponent(q))).users.map(u=>({id:u.id,name:u.name,k:''})))}catch(e){}
  },300)};
 }
-async function doFwd(list,to){
+async function doFwd(list,to,k){
  try{
-  for(const id of list){const m=MS.get(id);if(!m)continue;await api('/api/send',{to,text:m.text,fwd:m.fwd||(m.mine?A().name:peer.name)})}
+  for(const id of list){
+   const m=MS.get(id);if(!m)continue;
+   const body={text:m.text,fwd:m.fwd||(m.mine?A().name:(m.sn||peer.name))};
+   if(k)body.cid=to;else body.to=to;
+   await api(k?'/api/csend':'/api/send',body);
+  }
   clearSel();toast('هدایت شد');poll();
  }catch(e){toast(e.message)}
 }
 function delDlg(list){
  closeMenu();
+ const conv=peer.kind,adm=peer.role=='owner'||peer.role=='admin';
  const allMine=list.every(i=>MS.get(i)&&MS.get(i).mine);
+ const canAll=conv?(allMine||adm):allMine;
  const d=document.createElement('div');d.className='over';d.id='dd';
- d.innerHTML=`<div class="glass"><h3>${list.length>1?'حذف '+list.length.toLocaleString('fa-IR')+' پیام':'حذف پیام'}</h3><button class="pb" id="d1">حذف برای من</button>${allMine?'<button class="pb dg" id="d2">حذف برای هر دو</button>':''}<button class="pb" id="d0">انصراف</button></div>`;
+ d.innerHTML=`<div class="glass"><h3>${list.length>1?'حذف '+list.length.toLocaleString('fa-IR')+' پیام':'حذف پیام'}</h3>${conv?'':'<button class="pb" id="d1">حذف برای من</button>'}${canAll?'<button class="pb dg" id="d2">'+(conv?'حذف برای همه':'حذف برای هر دو')+'</button>':''}<button class="pb" id="d0">انصراف</button></div>`;
  document.body.appendChild(d);
  $('#d0').onclick=()=>d.remove();
- const go=async all=>{d.remove();try{await api('/api/delete',{ids:list,all});list.forEach(rm);clearSel()}catch(e){toast(e.message)}};
- $('#d1').onclick=()=>go(false);
- if(allMine)$('#d2').onclick=()=>go(true);
+ const go=async all=>{d.remove();try{await api(conv?'/api/cdelete':'/api/delete',{ids:list,all});list.forEach(rm);clearSel()}catch(e){toast(e.message)}};
+ if(!conv)$('#d1').onclick=()=>go(false);
+ if(canAll)$('#d2').onclick=()=>go(true);
 }
 function jump(id){const el=document.querySelector('#msgs .bub[data-id="'+id+'"]');if(!el)return;el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1200)}
 function rxHtml(m){
+ if(m.rxl&&m.rxl.length)return `<div class="rx">${m.rxl.map(x=>`<span class="rc${x.m?' mine':''}">${PE.svg(x.e,16)}${x.n>1?'<i>'+x.n.toLocaleString('fa-IR')+'</i>':''}</span>`).join('')}</div>`;
  const r=m.rx||{},a=r.me,b=r.peer;if(!a&&!b)return '';
  const chip=(n,c)=>`<span class="rc">${PE.svg(n,16)}${c>1?'<i>'+c.toLocaleString('fa-IR')+'</i>':''}</span>`;
  if(a&&b&&a==b)return `<div class="rx">${chip(a,2)}</div>`;
@@ -292,10 +324,16 @@ function refreshRx(id){
 async function react(id){
  const e=store.get('dtap','heart_red');if(!e)return;
  const m=MS.get(id);if(!m)return;
- const nw=(m.rx&&m.rx.me==e)?null:e;
  try{
-  await api('/api/react',{id,emoji:nw});
-  m.rx=Object.assign({me:null,peer:null},m.rx,{me:nw});
+  if(peer.kind){
+   const mine=(m.rxl||[]).some(x=>x.m&&x.e==e);
+   const j=await api('/api/creact',{id,emoji:mine?null:e});
+   m.rxl=j.rxl;
+  }else{
+   const nw=(m.rx&&m.rx.me==e)?null:e;
+   await api('/api/react',{id,emoji:nw});
+   m.rx=Object.assign({me:null,peer:null},m.rx,{me:nw});
+  }
   refreshRx(id);if(navigator.vibrate)navigator.vibrate(10);
  }catch(x){toast(x.message)}
 }
@@ -365,11 +403,11 @@ function gestures(){
  box.addEventListener('scroll',closeMenu);
  box.addEventListener('contextmenu',e=>e.preventDefault());
 }
-function openChat(id,name){
+function openChat(id,name,kind,meta){
  if(open)return;
- {const o=$('#chatv');if(o)o.remove()}peer={id,name};last=0;dl=0;rd=0;since=0;rng=null;replyTo=null;editing=null;sel.clear();MS.clear();open=true;document.body.classList.add('inchat');
+ {const o=$('#chatv');if(o)o.remove()}peer={id,name,kind:kind||'',role:(meta&&meta.role)||'',members:(meta&&meta.members)||0};last=0;dl=0;rd=0;since=0;rng=null;replyTo=null;editing=null;sel.clear();MS.clear();open=true;document.body.classList.add('inchat');
  const v=document.createElement('div');v.id='chatv';
- v.innerHTML=`<div class="chead"><button class="lb" id="cb">بازگشت</button><div class="t"><b>${esc(name)}</b><small id="cst"></small></div></div><div class="selbar"><button class="pk" id="sax">${I.x}</button><b id="scount"></b><span class="sp"></span><button class="pk" id="sa-reply">${I.reply}</button><button class="pk" id="sa-edit">${I.edit}</button><button class="pk" id="sa-copy">${I.copy}</button><button class="pk" id="sa-fwd">${I.fwd}</button><button class="pk" id="sa-del">${I.del}</button></div><div id="msgs"></div><div id="rbar"></div><div class="row cin"><button id="ce"></button><div id="ci" contenteditable="true" dir="auto" data-ph="پیام..."></div><button id="cs">ارسال</button></div><div id="epan"></div>`;
+ v.innerHTML=`<div class="chead"><button class="lb" id="cb">بازگشت</button><div class="t"><b>${esc(name)}${meta&&meta.verified?VT:''}</b><small id="cst">${kind?cnt(meta&&meta.members):''}</small></div></div><div class="selbar"><button class="pk" id="sax">${I.x}</button><b id="scount"></b><span class="sp"></span><button class="pk" id="sa-reply">${I.reply}</button><button class="pk" id="sa-edit">${I.edit}</button><button class="pk" id="sa-copy">${I.copy}</button><button class="pk" id="sa-fwd">${I.fwd}</button><button class="pk" id="sa-del">${I.del}</button></div><div id="msgs"></div><div id="rbar"></div><div class="row cin"><button id="ce"></button><div id="ci" contenteditable="true" dir="auto" data-ph="پیام..."></div><button id="cs">ارسال</button></div><div id="lockbar"></div><div id="epan"></div>`;
  document.body.appendChild(v);
  const ci=$('#ci');
  const saveR=()=>{const s=getSelection();if(s.rangeCount&&ci.contains(s.anchorNode))rng=s.getRangeAt(0).cloneRange()};
@@ -381,15 +419,15 @@ function openChat(id,name){
  $('#ce').onclick=togglePanel;
  $('#cs').onpointerdown=e=>e.preventDefault();
  $('#cs').onclick=send;
- $('#cb').onclick=back;
+ $('#cb').onclick=back;$('.chead .t').onclick=info;
  $('#sax').onclick=clearSel;$('#sa-reply').onclick=aReply;$('#sa-edit').onclick=aEdit;
  $('#sa-copy').onclick=aCopy;$('#sa-fwd').onclick=aFwd;$('#sa-del').onclick=aDel;
- gestures();buildPanel();
+ gestures();buildPanel();lockCheck();
  poll();timer=setInterval(poll,2000);
 }
 function back(){
  if(!open)return false;
- const x=$('#fs')||$('#dd');if(x){x.remove();return true}
+ const x=$('#fs')||$('#dd')||$('#isheet');if(x){x.remove();return true}
  if(document.querySelector('#cmenu:not(.out)')&&!sel.size){closeMenu();return true}
  if(sel.size){clearSel();return true}
  const p=$('#epan');
@@ -399,23 +437,27 @@ function back(){
 function closeChat(){
  if(!open)return;open=false;clearInterval(timer);
  const v=$('#chatv');
- ['#cmenu','#fs','#dd'].forEach(x=>{const e=$(x);if(e)e.remove()});
+ ['#cmenu','#fs','#dd','#isheet'].forEach(x=>{const e=$(x);if(e)e.remove()});
  document.body.classList.remove('inchat');
  peer=null;sel.clear();MS.clear();replyTo=null;editing=null;
  if(v){v.style.animation='';v.style.pointerEvents='none';v.classList.add('out');setTimeout(()=>v.remove(),180)}
  loadChats();
 }
 async function poll(){
- if(!peer)return;const pid=peer.id;
+ if(!peer)return;const pid=peer.id,k=peer.kind;
  try{
   const vis=document.visibilityState==='visible'?'&seen=1':'';
-  const j=await api('/api/messages?with='+pid+'&after='+last+'&since='+Math.max(0,since-1)+vis);
-  if(!peer||peer.id!=pid)return;
-  dl=j.dlv;rd=j.rd;since=j.now;if(last>0&&j.messages.some(m=>!m.mine&&m.id>last))sndIn();
+  const j=k
+   ?await api('/api/cmessages?cid='+pid+'&after='+last+'&since='+Math.max(0,since-1)+vis)
+   :await api('/api/messages?with='+pid+'&after='+last+'&since='+Math.max(0,since-1)+vis);
+  if(!peer||peer.id!=pid||peer.kind!=k)return;
+  since=j.now;
+  if(last>0&&j.messages.some(m=>!m.mine&&m.id>last))sndIn();
+  if(k){peer.role=j.role||'';peer.members=j.members;const s=$('#cst');if(s)s.textContent=cnt(j.members);lockCheck()}
+  else{dl=j.dlv;rd=j.rd}
   if(j.messages.length)add(j.messages);
   applyCh(j.changes||[]);
-  setTicks();
-  const s=$('#cst');if(s)s.textContent=seenTxt(j.peer_last,j.now);
+  if(!k){setTicks();const s=$('#cst');if(s)s.textContent=seenTxt(j.peer_last,j.now)}
  }catch(e){const s=$('#cst');if(s)s.textContent='در حال اتصال...'}
 }
 async function send(){
@@ -425,11 +467,74 @@ async function send(){
  const keep=ci.innerHTML;ci.innerHTML='';rng=null;
  try{
   if(editing){const id=editing;await api('/api/edit',{id,text:t});applyCh([{id,text:t,gone:false,edited:true}])}
-  else{const body={to:peer.id,text:t};if(replyTo)body.reply=replyTo.id;const j=await api('/api/send',body);add([j.message],true);setTicks();sndSend()}
+  else{
+   const body=peer.kind?{cid:peer.id,text:t}:{to:peer.id,text:t};
+   if(replyTo)body.reply=replyTo.id;
+   const j=await api(peer.kind?'/api/csend':'/api/send',body);
+   add([j.message],true);if(!peer.kind)setTicks();sndSend();
+  }
   clearBar();
  }catch(e){toast(e.message);const c2=$('#ci');if(c2)c2.innerHTML=keep}
  const ep=$('#epan'),c3=$('#ci');
  if(ep&&c3&&!ep.classList.contains('on'))c3.focus();
+}
+function lockCheck(){
+ if(!peer||!peer.kind)return;
+ const row=$('#chatv .cin'),lb=$('#lockbar');if(!row||!lb)return;
+ const r=peer.role,ok=peer.kind=='group'?!!r:(r=='owner'||r=='admin');
+ const key=peer.kind+'|'+r;if(lb.dataset.k===key)return;lb.dataset.k=key;
+ row.classList.toggle('lk',!ok);lb.classList.toggle('on',!ok);
+ if(ok){lb.innerHTML='';return}
+ lb.innerHTML=r?'<span class="mu">فقط مدیران می‌تونن توی این کانال پیام بفرستن</span>':'<button class="pb" id="jn">عضویت</button>';
+ const j=$('#jn');
+ if(j)j.onclick=async()=>{try{await api('/api/cjoin',{id:peer.id});peer.role='member';lockCheck();poll()}catch(e){toast(e.message)}};
+}
+function pickUser(title,cb){
+ const d=document.createElement('div');d.id='fs';
+ d.innerHTML=`<div class="fbox"><div class="fh"><b>${title}</b><button class="pk" id="px">${I.x}</button></div><input class="in" id="pq" placeholder="جستجوی کاربر"><div id="pl"></div></div>`;
+ document.body.appendChild(d);
+ const close=()=>d.remove();
+ $('#px').onclick=close;d.onclick=e=>{if(e.target==d)close()};
+ let t;
+ $('#pq').oninput=()=>{clearTimeout(t);t=setTimeout(async()=>{
+  const q=$('#pq').value.trim();
+  if(!q){$('#pl').innerHTML='';return}
+  try{
+   const j=await api('/api/search?q='+encodeURIComponent(q));
+   $('#pl').innerHTML=j.users.map(u=>`<div class="ci" data-u="${u.id}"><span class="avw">${av(u.name,u.id)}</span><div class="cm"><b>${esc(u.name)}</b><small>@${esc(u.username)}</small></div></div>`).join('')||'<div class="empty">کاربری پیدا نشد</div>';
+   $('#pl').querySelectorAll('[data-u]').forEach(e=>e.onclick=()=>{const u=j.users.find(x=>x.id==e.dataset.u);close();cb(u)});
+  }catch(e){toast(e.message)}
+ },300)};
+}
+async function info(){
+ if(!peer||!peer.kind)return;
+ closeMenu();
+ let j;try{j=await api('/api/cinfo?id='+peer.id)}catch(e){toast(e.message);return}
+ const c=j.conv,adm=j.role=='owner'||j.role=='admin',nm=c.kind=='channel'?'کانال':'گروه';
+ const d=document.createElement('div');d.id='isheet';
+ d.innerHTML=`<div class="fbox"><div class="fh"><b>اطلاعات ${nm}</b><button class="pk" id="ix">${I.x}</button></div><div class="iv">${av(c.title,c.id,c.kind)}<h3>${esc(c.title)}${c.verified?VT:''}</h3><p class="mu">${cnt(c.members)}${c.uname?' · @'+esc(c.uname):''}</p>${c.descr?'<p>'+esc(c.descr)+'</p>':''}</div>${adm?'<button class="pb" id="iadd">افزودن عضو</button>':''}${j.role&&j.role!='owner'?'<button class="pb dg" id="ilv">ترک '+nm+'</button>':''}${!j.role?'<button class="pb" id="ijn">عضویت</button>':''}<div class="mem">${j.members.map(m=>`<div class="ci" style="border:0"><span class="avw">${av(m.name,m.id)}</span><div class="cm"><b>${esc(m.name)}</b><small>${m.role=='owner'?'مالک':m.role=='admin'?'مدیر':''}</small></div></div>`).join('')}</div></div>`;
+ document.body.appendChild(d);
+ const close=()=>d.remove();
+ $('#ix').onclick=close;d.onclick=e=>{if(e.target==d)close()};
+ if($('#iadd'))$('#iadd').onclick=()=>pickUser('افزودن عضو',async u=>{try{await api('/api/cadd',{id:c.id,uid:u.id});toast('اضافه شد')}catch(e){toast(e.message)}});
+ if($('#ilv'))$('#ilv').onclick=async()=>{try{await api('/api/cleave',{id:c.id});close();closeChat();toast('خارج شدی')}catch(e){toast(e.message)}};
+ if($('#ijn'))$('#ijn').onclick=async()=>{try{await api('/api/cjoin',{id:c.id});close();peer.role='member';lockCheck();poll()}catch(e){toast(e.message)}};
+}
+function createUI(){
+ const d=document.createElement('div');d.id='fs';
+ d.innerHTML=`<div class="fbox"><div class="fh"><b>ساخت گروه یا کانال</b><button class="pk" id="cx">${I.x}</button></div><div class="seg" id="ck"><button data-k="group" class="on">گروه</button><button data-k="channel">کانال</button></div><input class="in" id="ct" placeholder="نام" maxlength="40"><input class="in" id="cu" dir="ltr" placeholder="آدرس عمومی (اختیاری)" autocapitalize="none"><input class="in" id="cd" placeholder="توضیحات (اختیاری)"><p class="mu" id="chn">گروه: همه‌ی اعضا می‌تونن پیام بفرستن</p><p class="err" id="ce2"></p><button class="pb" id="cgo">بساز</button></div>`;
+ document.body.appendChild(d);
+ let kind='group';
+ const hint={group:'گروه: همه‌ی اعضا می‌تونن پیام بفرستن',channel:'کانال: فقط مدیران پیام می‌فرستن و بقیه می‌خونن'};
+ d.querySelectorAll('#ck button').forEach(b=>b.onclick=()=>{kind=b.dataset.k;d.querySelectorAll('#ck button').forEach(x=>x.classList.toggle('on',x==b));$('#chn').textContent=hint[kind]});
+ $('#cx').onclick=()=>d.remove();d.onclick=e=>{if(e.target==d)d.remove()};
+ $('#cgo').onclick=async()=>{
+  $('#ce2').textContent='';
+  try{
+   const j=await api('/api/cnew',{kind,title:$('#ct').value.trim(),uname:$('#cu').value.trim(),descr:$('#cd').value.trim()});
+   d.remove();CM['c'+j.conv.id]=j.conv;loadChats();openChat(j.conv.id,j.conv.title,j.conv.kind,j.conv);
+  }catch(e){$('#ce2').textContent=e.message}
+ };
 }
 render();
 let swallow=false;
