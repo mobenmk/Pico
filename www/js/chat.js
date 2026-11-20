@@ -521,11 +521,12 @@ async function info(){
  if($('#ilv'))$('#ilv').onclick=async()=>{try{await api('/api/cleave',{id:c.id});close();closeChat();toast('خارج شدی')}catch(e){toast(e.message)}};
  if($('#ijn'))$('#ijn').onclick=async()=>{try{await api('/api/cjoin',{id:c.id});close();peer.role='member';lockCheck();poll()}catch(e){toast(e.message)}};
 }
-function createUI(){
+function createUI(k0){
  const d=document.createElement('div');d.id='fs';
  d.innerHTML=`<div class="fbox"><div class="fh"><b>ساخت گروه یا کانال</b><button class="pk" id="cx">${I.x}</button></div><div class="seg" id="ck"><button data-k="group" class="on">گروه</button><button data-k="channel">کانال</button></div><input class="in" id="ct" placeholder="نام" maxlength="40"><input class="in" id="cu" dir="ltr" placeholder="آدرس عمومی (اختیاری)" autocapitalize="none"><input class="in" id="cd" placeholder="توضیحات (اختیاری)"><p class="mu" id="chn">گروه: همه‌ی اعضا می‌تونن پیام بفرستن</p><p class="err" id="ce2"></p><button class="pb" id="cgo">بساز</button></div>`;
  document.body.appendChild(d);
- let kind='group';
+ let kind=k0||'group';
+ if(kind=='channel'){d.querySelectorAll('#ck button').forEach(x=>x.classList.toggle('on',x.dataset.k=='channel'));$('#chn').textContent='کانال: فقط مدیران پیام می‌فرستن و بقیه می‌خونن'}
  const hint={group:'گروه: همه‌ی اعضا می‌تونن پیام بفرستن',channel:'کانال: فقط مدیران پیام می‌فرستن و بقیه می‌خونن'};
  d.querySelectorAll('#ck button').forEach(b=>b.onclick=()=>{kind=b.dataset.k;d.querySelectorAll('#ck button').forEach(x=>x.classList.toggle('on',x==b));$('#chn').textContent=hint[kind]});
  $('#cx').onclick=()=>d.remove();d.onclick=e=>{if(e.target==d)d.remove()};
@@ -546,5 +547,5 @@ document.addEventListener('touchstart',e=>{
 },true);
 document.addEventListener('click',e=>{if(swallow){swallow=false;e.stopPropagation();e.preventDefault()}},true);
 setInterval(()=>{if(A()&&!open)loadChats()},3000);
-return{render,back};
+return{render,back,open:(id,name)=>openChat(id,name),create:k=>createUI(k)};
 })();

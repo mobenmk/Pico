@@ -258,3 +258,42 @@ body.noanim *,body.noanim *::before,body.noanim *::after{animation:none!importan
 #chats #mk svg{width:28px;height:28px;stroke:#fff;stroke-width:2.6;filter:drop-shadow(0 0 5px #fff)}
 #chats #mk:active{transform:scale(.92)}
 @keyframes neon{from{box-shadow:0 0 8px #a855f7,0 0 18px rgba(168,85,247,.6),0 0 32px rgba(34,211,238,.3),inset 0 0 8px rgba(255,255,255,.3)}to{box-shadow:0 0 14px #c084fc,0 0 34px rgba(168,85,247,.9),0 0 60px rgba(34,211,238,.6),inset 0 0 12px rgba(255,255,255,.45)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+.mbtns{display:flex;gap:10px;margin-top:16px}
+.mbn{flex:1;background:var(--glass);border:1px solid var(--line);color:var(--tx);border-radius:20px;padding:12px 6px;font:inherit;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.mbn svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.onl{color:#34d399!important}
+.pks{position:fixed;inset:0;z-index:55;background:rgba(0,0,0,.55);display:flex;align-items:flex-end}
+.pkb{width:100%;background:rgba(20,14,40,.98);border-radius:22px 22px 0 0;padding:14px 14px calc(18px + env(safe-area-inset-bottom));animation:slideUp .22s}
+.pkg{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:8px}
+.pt{aspect-ratio:1.4;border-radius:18px;border:0;color:#fff;font:inherit;font-size:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.pt svg{width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pt .pe{width:52px;height:52px}
+.pt.gal{background:#27324a}
+.pt.emo{background:linear-gradient(160deg,#22d3ee,#3b82f6)}
+.pt.pnt{background:linear-gradient(160deg,#e5e7eb,#9ca3af);color:#222}
+:root[data-theme=light] .pkb{background:rgba(255,255,255,.98)}
+.crp{position:fixed;inset:0;z-index:60;background:#000;display:flex;flex-direction:column;color:#fff;padding-top:env(safe-area-inset-top)}
+.crp .lb{color:#fff;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2)}
+.crh{padding:12px 14px}
+.crs{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.crc{display:flex;align-items:center;gap:14px;padding:10px 22px}
+.crc input{flex:1;accent-color:#fff}
+.crt{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px calc(16px + env(safe-area-inset-bottom))}
+.cb2,.cok{border:0;color:#fff;display:flex;align-items:center;justify-content:center;padding:0}
+.cb2{width:46px;height:46px;border-radius:23px;background:rgba(255,255,255,.14)}
+.cok{width:62px;height:62px;border-radius:31px;background:#2f9bff;margin-inline-start:auto}
+.cb2 svg,.cok svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.epv{width:200px;height:200px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.epv .pe{width:120px;height:120px}
+.gsw{display:flex;gap:12px;justify-content:center;padding:8px 14px}
+.gsw button{width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.4);padding:0}
+.egr{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;max-height:150px;overflow:auto;padding:6px 10px}
+.egr button{background:none;border:0;padding:4px}
+.pg{position:relative;overflow:hidden}
+.pg::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.55);pointer-events:none}
+#pcv{touch-action:none;display:block}
+#contacts .fabc{position:fixed;left:18px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:8;width:58px;height:58px;border-radius:50%;border:1px solid rgba(255,255,255,.55);background:linear-gradient(135deg,#38bdf8,#2563eb);display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 0 10px #38bdf8,0 0 26px rgba(56,189,248,.75),inset 0 0 10px rgba(255,255,255,.35);animation:neon2 2.2s ease-in-out infinite alternate}
+#contacts .fabc svg{width:28px;height:28px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px #fff)}
+#contacts .fabc:active{transform:scale(.92)}
+@keyframes neon2{from{box-shadow:0 0 8px #38bdf8,0 0 18px rgba(56,189,248,.6),inset 0 0 8px rgba(255,255,255,.3)}to{box-shadow:0 0 14px #7dd3fc,0 0 34px rgba(56,189,248,.9),0 0 56px rgba(37,99,235,.6),inset 0 0 12px rgba(255,255,255,.45)}}

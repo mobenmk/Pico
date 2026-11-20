@@ -125,14 +125,31 @@ function pickPhoto(){
  };
  inp.click();
 }
-function act(a){if(a=='cam'){pickPhoto();return}
+function editInfo(){
+ const a=A();
+ if(!a){toast('اول وارد حساب شو');return}
+ sub('ویرایش اطلاعات',`<div class="mc"><div class="sl"><input class="in" id="enm" maxlength="30" value="${esc(a.name)}" placeholder="اسم نمایشی"><button class="pb" id="esv">ذخیره</button><p class="err" id="eer"></p></div></div>`,()=>{
+  q('#esv').onclick=async()=>{
+   const v=q('#enm').value.trim();
+   if(!v){q('#eer').textContent='اسم نباید خالی باشه';return}
+   try{
+    const r=await fetch(PICKO_SERVER+'/api/pname',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+a.token},body:JSON.stringify({name:v})});
+    if(!r.ok)throw 0;
+    a.name=v;store.set('auth',a);closeSub(true);build();toast('ذخیره شد');
+   }catch(e){q('#eer').textContent='ذخیره نشد، سرور رو چک کن'}
+  };
+ });
+}
+function act(a){if(a=='cam'){if(typeof Photo!=='undefined')Photo.start();else pickPhoto();return}
+ if(a=='edit'){editInfo();return}
+ if(a=='goset'){const c=q('#mset').querySelectorAll('.mc')[2];if(c)c.scrollIntoView({behavior:'smooth',block:'start'});return}
  if(a=='chat')pgChat();else if(a=='acct')pgAcct();else if(a=='pk')pgPk();else if(a=='eco')pgEco();else if(a=='lang')pgLang();else if(a=='about')pgAbout();
  else toast('به‌زودی');
 }
 function main(){
  const a=A()||{name:'Picko',username:'guest'};
  const ch=esc((a.name||'?')[0]);
- return `<div class="mh"><div class="mav">${aimg(a)}${ch}<button class="mcam" data-a="cam">${svg(G.cam)}</button></div><h2>${esc(a.name)}</h2><p dir="ltr">@${esc(a.username)}</p></div>
+ return `<div class="mh"><div class="mav">${aimg(a)}${ch}<button class="mcam" data-a="cam">${svg(G.cam)}</button></div><h2>${esc(a.name)}</h2><p>آنلاین · <span dir="ltr">@${esc(a.username)}</span></p><div class="mbtns"><button class="mbn" data-a="cam">${svg(G.cam)}<span>تنظیم عکس</span></button><button class="mbn" data-a="edit">${svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>')}<span>ویرایش اطلاعات</span></button><button class="mbn" data-a="goset">${svg(G.gear)}<span>تنظیمات</span></button></div></div>
  <div class="mc"><div class="msec">حساب‌های کاربری</div><div class="mr" data-a="acct"><span class="mav2">${aimg(a)}${ch}</span><div class="mt"><b>${esc(a.name)}</b></div></div>${row('user','#22b8cf','مدیریت حساب‌ها','','soon')}</div>
  <div class="mc">${row('gear','#34c759','تنظیمات پیکو','','pk')}${row('info','#ff9f0a','درباره','','about')}</div>
  <div class="mc">${row('user','#2f9bff','حساب کاربری','اسم، نام کاربری، خروج از حساب','acct')}${row('chat','#ff9f0a','تنظیمات گفتگو','پس‌زمینه، حالت شب، انیمیشن‌ها','chat')}${row('key','#34c759','حریم خصوصی و امنیت','آخرین بازدید، دستگاه‌ها، کلیدهای عبور','soon')}${row('spk','#ff4d6d','اعلان‌ها','صداها، تماس‌ها، نشانگرها','soon')}${row('data','#3b82f6','داده‌ها و ذخیره‌سازی','تنظیمات دانلود رسانه','soon')}${row('folder','#2f9bff','پوشه‌های گفتگو','مرتب‌سازی گفتگوها در پوشه‌ها','soon')}${row('laptop','#22b8cf','دستگاه‌ها','مدیریت دستگاه‌های متصل شده','soon')}${row('bat','#ff9f0a','ذخیره انرژی','کاهش مصرف انرژی در شارژ کم','eco')}${row('globe','#a855f7','زبان','فارسی','lang')}</div>
@@ -149,5 +166,5 @@ function build(){
 applyPrefs();build();
 if(typeof names!=='undefined'){names.menu='تنظیمات';if(store.get('tab','chats')=='menu'){const t=q('#title');if(t)t.textContent='تنظیمات'}}
 setInterval(()=>{const a=A();const k=a?a.id+'|'+a.name:'';if(k!==lastKey)build()},1500);
-return{back:()=>closeSub()};
+return{back:()=>closeSub(),refresh:()=>build()};
 })();
