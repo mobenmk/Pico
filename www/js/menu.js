@@ -140,7 +140,13 @@ function editInfo(){
   };
  });
 }
-function act(a){if(a=='cam'){if(typeof Photo!=='undefined')Photo.start();else pickPhoto();return}
+function pgData(){
+ sub('داده‌ها و ذخیره‌سازی',`<div class="mc"><div class="msec">دانلود خودکار</div><div class="sw"><span>دانلود خودکار عکس‌ها</span>${tg('t-dl',store.get('autodl',true)!==false)}</div></div><p class="mu hint">اگه خاموش باشه، عکس‌ها فقط با زدن روی «دانلود» باز می‌شن و داده‌ی کمتری مصرف می‌شه.</p><div class="mc"><div class="msec">کیفیت عکس‌های ارسالی</div><div class="seg" id="iq"><button data-q="std" class="${store.get('imgq','std')=='std'?'on':''}">معمولی</button><button data-q="hq" class="${store.get('imgq','std')=='hq'?'on':''}">بالا</button></div></div><p class="mu hint">کیفیت بالا عکس رو تا ۱۹۲۰ پیکسل می‌فرسته و حجم بیشتری داره.</p>`,()=>{
+  bindTg('t-dl',on=>store.set('autodl',on));
+  q('#iq').onclick=e=>{const b=e.target.closest('button');if(!b)return;store.set('imgq',b.dataset.q);q('#iq').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x==b))};
+ });
+}
+function act(a){if(a=='data'){pgData();return}if(a=='cam'){if(typeof Photo!=='undefined')Photo.start();else pickPhoto();return}
  if(a=='edit'){editInfo();return}
  if(a=='goset'){const c=q('#mset').querySelectorAll('.mc')[2];if(c)c.scrollIntoView({behavior:'smooth',block:'start'});return}
  if(a=='chat')pgChat();else if(a=='acct')pgAcct();else if(a=='pk')pgPk();else if(a=='eco')pgEco();else if(a=='lang')pgLang();else if(a=='about')pgAbout();
@@ -152,7 +158,7 @@ function main(){
  return `<div class="mh"><div class="mav">${aimg(a)}${ch}<button class="mcam" data-a="cam">${svg(G.cam)}</button></div><h2>${esc(a.name)}</h2><p>آنلاین · <span dir="ltr">@${esc(a.username)}</span></p><div class="mbtns"><button class="mbn" data-a="cam">${svg(G.cam)}<span>تنظیم عکس</span></button><button class="mbn" data-a="edit">${svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>')}<span>ویرایش اطلاعات</span></button><button class="mbn" data-a="goset">${svg(G.gear)}<span>تنظیمات</span></button></div></div>
  <div class="mc"><div class="msec">حساب‌های کاربری</div><div class="mr" data-a="acct"><span class="mav2">${aimg(a)}${ch}</span><div class="mt"><b>${esc(a.name)}</b></div></div>${row('user','#22b8cf','مدیریت حساب‌ها','','soon')}</div>
  <div class="mc">${row('gear','#34c759','تنظیمات پیکو','','pk')}${row('info','#ff9f0a','درباره','','about')}</div>
- <div class="mc">${row('user','#2f9bff','حساب کاربری','اسم، نام کاربری، خروج از حساب','acct')}${row('chat','#ff9f0a','تنظیمات گفتگو','پس‌زمینه، حالت شب، انیمیشن‌ها','chat')}${row('key','#34c759','حریم خصوصی و امنیت','آخرین بازدید، دستگاه‌ها، کلیدهای عبور','soon')}${row('spk','#ff4d6d','اعلان‌ها','صداها، تماس‌ها، نشانگرها','soon')}${row('data','#3b82f6','داده‌ها و ذخیره‌سازی','تنظیمات دانلود رسانه','soon')}${row('folder','#2f9bff','پوشه‌های گفتگو','مرتب‌سازی گفتگوها در پوشه‌ها','soon')}${row('laptop','#22b8cf','دستگاه‌ها','مدیریت دستگاه‌های متصل شده','soon')}${row('bat','#ff9f0a','ذخیره انرژی','کاهش مصرف انرژی در شارژ کم','eco')}${row('globe','#a855f7','زبان','فارسی','lang')}</div>
+ <div class="mc">${row('user','#2f9bff','حساب کاربری','اسم، نام کاربری، خروج از حساب','acct')}${row('chat','#ff9f0a','تنظیمات گفتگو','پس‌زمینه، حالت شب، انیمیشن‌ها','chat')}${row('key','#34c759','حریم خصوصی و امنیت','آخرین بازدید، دستگاه‌ها، کلیدهای عبور','soon')}${row('spk','#ff4d6d','اعلان‌ها','صداها، تماس‌ها، نشانگرها','soon')}${row('data','#3b82f6','داده‌ها و ذخیره‌سازی','تنظیمات دانلود رسانه','data')}${row('folder','#2f9bff','پوشه‌های گفتگو','مرتب‌سازی گفتگوها در پوشه‌ها','soon')}${row('laptop','#22b8cf','دستگاه‌ها','مدیریت دستگاه‌های متصل شده','soon')}${row('bat','#ff9f0a','ذخیره انرژی','کاهش مصرف انرژی در شارژ کم','eco')}${row('globe','#a855f7','زبان','فارسی','lang')}</div>
  <div class="mc"><div class="msec">راهنمایی</div>${row('dots','#ff9f0a','پرسیدن سؤال','','soon')}${row('q','#3b82f6','پرسش‌های متداول پیکو','','soon')}${row('shield','#34c759','سیاست حریم خصوصی','','soon')}</div>`;
 }
 let lastKey=null;

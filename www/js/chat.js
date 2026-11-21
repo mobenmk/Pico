@@ -106,11 +106,72 @@ async function loadChats(){
   const l=$('#clist');if(!l||($('#qs')&&$('#qs').value.trim()))return;
   k.convs.forEach(c=>{CM['c'+c.id]=c});
   const rows=[];
-  j.chats.forEach(c=>rows.push({ts:c.ts,h:item(c,(c.mine?tick(c.st)+' ':'')+PE.render(c.text.slice(0,80)),hm(c.ts),c.unread,j.now-c.last_seen<12)}));
-  k.convs.forEach(c=>rows.push({ts:c.ts,h:item(c,(c.sn?esc(c.sn)+': ':'')+PE.render((c.text||'').slice(0,80)),hm(c.ts),c.unread,false)}));
+  j.chats.forEach(c=>rows.push({ts:c.ts,h:item(c,(c.mine?tick(c.st)+' ':'')+PE.render(prevT(c.text)),hm(c.ts),c.unread,j.now-c.last_seen<12)}));
+  k.convs.forEach(c=>rows.push({ts:c.ts,h:item(c,(c.sn?esc(c.sn)+': ':'')+PE.render(prevT(c.text)),hm(c.ts),c.unread,false)}));
   rows.sort((a,b)=>b.ts-a.ts);
   l.innerHTML=rows.length?rows.map(r=>r.h).join(''):'<div class="glass empty">هنوز چتی نداری. بالا دنبال یه نفر بگرد</div>';bind();
  }catch(e){}
+}
+const PHR=/^#ph:([a-f0-9]{24}):(\d+)x(\d+)\|([\s\S]*)$/;
+function PH(t){const m=PHR.exec(t||'');return m?{id:m[1],w:+m[2],h:+m[3],cap:m[4]}:null}
+function capOf(t){const p=PH(t);return p?p.cap:(t||'')}
+function prevT(t){const p=PH(t);return (p?('عکس'+(p.cap?' · '+p.cap:'')):(t||'')).slice(0,80)}
+function phHtml(m){
+ const p=PH(m.text);if(!p)return '';
+ const auto=store.get('autodl',true)!==false;
+ return `<div class="ph" data-p="${p.id}" style="width:${Math.min(280,p.w)}px;aspect-ratio:${p.w}/${p.h}">${auto?`<img src="${PICKO_SERVER}/api/photo/${p.id}">`:'<button class="dl">دانلود</button>'}</div>`;
+}
+function loadPh(ph){ph.innerHTML=`<img src="${PICKO_SERVER}/api/photo/${ph.dataset.p}">`}
+function openViewer(pid){
+ const d=document.createElement('div');d.id='viewer';
+ d.innerHTML=`<button class="pk" id="vx">${I.x}</button><img src="${PICKO_SERVER}/api/photo/${pid}">`;
+ document.body.appendChild(d);
+ d.onclick=()=>d.remove();
+}
+function attach(){
+ if(!peer)return;
+ const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+ inp.onchange=()=>{const f=inp.files&&inp.files[0];if(f)prepPhoto(f)};
+ inp.click();
+}
+function prepPhoto(f){
+ const url=URL.createObjectURL(f),img=new Image();
+ img.onload=()=>{
+  const hq=store.get('imgq','std')=='hq',mx=hq?1920:1280;
+  let w=img.width,h=img.height;
+  const k=Math.min(1,mx/Math.max(w,h));
+  w=Math.max(1,Math.round(w*k));h=Math.max(1,Math.round(h*k));
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  c.getContext('2d').drawImage(img,0,0,w,h);
+  URL.revokeObjectURL(url);
+  previewPhoto(c.toDataURL('image/jpeg',hq?0.88:0.78),w,h);
+ };
+ img.onerror=()=>toast('عکس خونده نشد');
+ img.src=url;
+}
+function previewPhoto(du,w,h){
+ const d=document.createElement('div');d.id='pv';
+ d.innerHTML=`<div class="pvh"><button class="lb" id="pvx">بازگشت</button></div><div class="pvi"><img src="${du}"></div><div class="pvc"><input class="in" id="pvt" placeholder="توضیح (اختیاری)"><button class="pb" id="pvs">ارسال</button></div>`;
+ document.body.appendChild(d);
+ $('#pvx').onclick=()=>d.remove();
+ $('#pvs').onclick=async()=>{
+  const b=$('#pvs');b.disabled=true;b.textContent='در حال ارسال...';
+  try{
+   const r=await api('/api/photo',{img:du,w,h});
+   const cap=$('#pvt').value.trim();
+   d.remove();
+   await sendText('#ph:'+r.id+':'+w+'x'+h+'|'+cap);
+  }catch(e){toast(e.message);b.disabled=false;b.textContent='ارسال'}
+ };
+}
+async function sendText(t){
+ if(!peer)return;
+ const body=peer.kind?{cid:peer.id,text:t}:{to:peer.id,text:t};
+ if(replyTo)body.reply=replyTo.id;
+ try{
+  const j=await api(peer.kind?'/api/csend':'/api/send',body);
+  add([j.message],true);if(!peer.kind)setTicks();sndSend();clearBar();
+ }catch(e){toast(e.message)}
 }
 function ser(n){let s='';n.childNodes.forEach(c=>{if(c.nodeType==3)s+=c.nodeValue;else if(c.classList&&c.classList.contains('ep'))s+=':'+c.dataset.n+':';else if(c.nodeName=='BR')s+='\n';else if(c.nodeName=='DIV')s+='\n'+ser(c);else s+=ser(c)});return s}
 function insertEmoji(n){
@@ -178,8 +239,8 @@ function bub(m){
  const conv=peer&&peer.kind;
  const sn=(conv&&!m.mine)?`<div class="sn" style="color:${NC(m.uid||0)}">${esc(m.sn||'')}</div>`:'';
  const f=m.fwd?`<div class="fw">هدایت‌شده از ${esc(m.fwd)}</div>`:'';
- const r=m.reply?`<div class="rp" data-r="${m.reply.id}"><b>${m.reply.mine?'تو':esc(m.reply.sn||peer.name)}</b><span>${m.reply.text==null?'پیام حذف شده':PE.render(m.reply.text.slice(0,100))}</span></div>`:'';
- return `<div class="bub ${m.mine?'me':''}" data-id="${m.id}"><span class="swi">${I.reply}</span>${sn}${f}${r}<div class="bt">${PE.render(m.text)}</div><div class="rxw">${rxHtml(m)}</div><small><span class="ed">${m.edited?'ویرایش‌شده ':''}</span><span class="tm">${hm(m.ts)}</span>${(m.mine&&!conv)?'<span class="tkw"></span>':''}<svg class="mo" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></small></div>`;
+ const r=m.reply?`<div class="rp" data-r="${m.reply.id}"><b>${m.reply.mine?'تو':esc(m.reply.sn||peer.name)}</b><span>${m.reply.text==null?'پیام حذف شده':PE.render(prevT(m.reply.text).slice(0,100))}</span></div>`:'';
+ return `<div class="bub ${m.mine?'me':''}" data-id="${m.id}"><span class="swi">${I.reply}</span>${sn}${f}${r}${phHtml(m)}<div class="bt">${PE.render(capOf(m.text))}</div><div class="rxw">${rxHtml(m)}</div><small><span class="ed">${m.edited?'ویرایش‌شده ':''}</span><span class="tm">${hm(m.ts)}</span>${(m.mine&&!conv)?'<span class="tkw"></span>':''}<svg class="mo" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></small></div>`;
 }
 function add(ms,force){
  const b=$('#msgs');if(!b)return;
@@ -194,7 +255,7 @@ function applyCh(ch){
   const m=MS.get(c.id);if(!m)return;
   m.text=c.text;m.edited=c.edited;if('rx' in c)m.rx=c.rx;if('rxl' in c)m.rxl=c.rxl;
   const b=document.querySelector('#msgs .bub[data-id="'+c.id+'"]');
-  if(b){b.querySelector('.bt').innerHTML=PE.render(c.text);b.querySelector('.ed').textContent=c.edited?'ویرایش‌شده ':'';b.querySelector('.rxw').innerHTML=rxHtml(m)}
+  if(b){b.querySelector('.bt').innerHTML=PE.render(capOf(c.text));b.querySelector('.ed').textContent=c.edited?'ویرایش‌شده ':'';b.querySelector('.rxw').innerHTML=rxHtml(m)}
  });
  if(ch.length)paint();
 }
@@ -246,17 +307,17 @@ function showMenu(b,only){
 function bar(kind,m){
  const el=$('#rbar');if(!el)return;
  el.className='on';
- el.innerHTML=`<div class="rbi"><b>${kind=='r'?'پاسخ به '+(m.mine?'خودت':esc(m.sn||peer.name)):'ویرایش پیام'}</b><span>${PE.render(m.text.slice(0,120))}</span></div><button class="pk" id="rx">${I.x}</button>`;
+ el.innerHTML=`<div class="rbi"><b>${kind=='r'?'پاسخ به '+(m.mine?'خودت':esc(m.sn||peer.name)):'ویرایش پیام'}</b><span>${PE.render(prevT(m.text).slice(0,120))}</span></div><button class="pk" id="rx">${I.x}</button>`;
  $('#rx').onclick=cancelBar;
 }
 function clearBar(){replyTo=null;editing=null;const el=$('#rbar');if(el){el.className='';el.innerHTML=''}}
 function cancelBar(){if(editing){const c=$('#ci');if(c)c.innerHTML='';rng=null}clearBar()}
 function swipeReply(id){const m=MS.get(id);if(!m)return;replyTo={id:m.id};editing=null;bar('r',m);focusC()}
 function aReply(){const m=MS.get(ids()[0]);if(!m)return;clearSel();replyTo={id:m.id};editing=null;bar('r',m);focusC()}
-function aEdit(){const m=MS.get(ids()[0]);if(!m||!m.mine)return;clearSel();editing=m.id;replyTo=null;setComposer(m.text);bar('e',m);focusC()}
+function aEdit(){const m=MS.get(ids()[0]);if(!m||!m.mine)return;clearSel();editing=m.id;replyTo=null;setComposer(capOf(m.text));bar('e',m);focusC()}
 function fb(t){const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove()}
 function aCopy(){
- const t=ids().map(i=>{const m=MS.get(i);return m?m.text.replace(/:([a-z0-9_]+):/g,(x,n)=>U[n]||x):''}).join('\n');
+ const t=ids().map(i=>{const m=MS.get(i);return m?capOf(m.text).replace(/:([a-z0-9_]+):/g,(x,n)=>U[n]||x):''}).join('\n');
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).catch(()=>fb(t));else fb(t);
  clearSel();toast('کپی شد');
 }
@@ -338,7 +399,7 @@ async function react(id){
   refreshRx(id);if(navigator.vibrate)navigator.vibrate(10);
  }catch(x){toast(x.message)}
 }
-let lastTap={id:0,t:0};
+let lastTap={id:0,t:0},vt=null;
 function bubAt(y){
  const L=document.querySelectorAll('#msgs .bub');
  for(const b of L){const r=b.getBoundingClientRect();if(y>=r.top&&y<=r.bottom)return b}
@@ -397,8 +458,8 @@ function gestures(){
   if(sel.size){toggle(id);return}
   if(!row&&e.target.closest('small')){showMenu(b,true);return}
   const n=Date.now();
-  if(lastTap.id==id&&n-lastTap.t<320){lastTap={id:0,t:0};react(id);return}
-  lastTap={id,t:n};
+  if(lastTap.id==id&&n-lastTap.t<320){clearTimeout(vt);lastTap={id:0,t:0};react(id);return}
+  lastTap={id,t:n};const phh=e.target.closest('.ph');if(phh&&!row){if(phh.querySelector('.dl')){loadPh(phh);return}clearTimeout(vt);vt=setTimeout(()=>openViewer(phh.dataset.p),330);return}
   const rp=e.target.closest('.rp');if(rp)jump(+rp.dataset.r);
  });
  box.addEventListener('scroll',closeMenu);
@@ -408,7 +469,7 @@ function openChat(id,name,kind,meta){
  if(open)return;
  {const o=$('#chatv');if(o)o.remove()}peer={id,name,kind:kind||'',role:(meta&&meta.role)||'',members:(meta&&meta.members)||0};last=0;dl=0;rd=0;since=0;rng=null;replyTo=null;editing=null;sel.clear();MS.clear();open=true;document.body.classList.add('inchat');
  const v=document.createElement('div');v.id='chatv';
- v.innerHTML=`<div class="chead"><button class="lb" id="cb">بازگشت</button><div class="t"><b>${esc(name)}${meta&&meta.verified?VT:''}</b><small id="cst">${kind?cnt(meta&&meta.members):''}</small></div></div><div class="selbar"><button class="pk" id="sax">${I.x}</button><b id="scount"></b><span class="sp"></span><button class="pk" id="sa-reply">${I.reply}</button><button class="pk" id="sa-edit">${I.edit}</button><button class="pk" id="sa-copy">${I.copy}</button><button class="pk" id="sa-fwd">${I.fwd}</button><button class="pk" id="sa-del">${I.del}</button></div><div id="msgs"></div><div id="rbar"></div><div class="row cin"><button id="ce"></button><div id="ci" contenteditable="true" dir="auto" data-ph="پیام..."></div><button id="cs">ارسال</button></div><div id="lockbar"></div><div id="epan"></div>`;
+ v.innerHTML=`<div class="chead"><button class="lb" id="cb">بازگشت</button><div class="t"><b>${esc(name)}${meta&&meta.verified?VT:''}</b><small id="cst">${kind?cnt(meta&&meta.members):''}</small></div></div><div class="selbar"><button class="pk" id="sax">${I.x}</button><b id="scount"></b><span class="sp"></span><button class="pk" id="sa-reply">${I.reply}</button><button class="pk" id="sa-edit">${I.edit}</button><button class="pk" id="sa-copy">${I.copy}</button><button class="pk" id="sa-fwd">${I.fwd}</button><button class="pk" id="sa-del">${I.del}</button></div><div id="msgs"></div><div id="rbar"></div><div class="row cin"><button id="ce"></button><button id="ca"></button><div id="ci" contenteditable="true" dir="auto" data-ph="پیام..."></div><button id="cs">ارسال</button></div><div id="lockbar"></div><div id="epan"></div>`;
  document.body.appendChild(v);
  const ci=$('#ci');
  const saveR=()=>{const s=getSelection();if(s.rangeCount&&ci.contains(s.anchorNode))rng=s.getRangeAt(0).cloneRange()};
@@ -418,6 +479,9 @@ function openChat(id,name,kind,meta){
  $('#ce').innerHTML=PE.svg('smile',24);
  $('#ce').onpointerdown=e=>e.preventDefault();
  $('#ce').onclick=togglePanel;
+ $('#ca').innerHTML=ic('<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M5 17l4.5-4.5 3 3 2.5-2.5L19 17"/>');
+ $('#ca').onpointerdown=e=>e.preventDefault();
+ $('#ca').onclick=attach;
  $('#cs').onpointerdown=e=>e.preventDefault();
  $('#cs').onclick=send;
  $('#cb').onclick=back;$('.chead .t').onclick=info;
@@ -426,7 +490,7 @@ function openChat(id,name,kind,meta){
  gestures();buildPanel();lockCheck();
  poll();timer=setInterval(poll,2000);
 }
-function back(){
+function back(){const vw=$('#viewer')||$('#pv');if(vw){vw.remove();return true}
  if(!open){const x=$('#fs')||$('#isheet');if(x){x.remove();return true}const qs=$('#qs');if(qs&&$('#chats.on')&&(qs.value||document.activeElement===qs)){exitSearch();return true}return false}
  const x=$('#fs')||$('#dd')||$('#isheet');if(x){x.remove();return true}
  if(document.querySelector('#cmenu:not(.out)')&&!sel.size){closeMenu();return true}
@@ -467,7 +531,7 @@ async function send(){
  if(!t)return;
  const keep=ci.innerHTML;ci.innerHTML='';rng=null;
  try{
-  if(editing){const id=editing;await api('/api/edit',{id,text:t});applyCh([{id,text:t,gone:false,edited:true}])}
+  if(editing){const id=editing,om=MS.get(id),op=om&&PH(om.text),nt=op?('#ph:'+op.id+':'+op.w+'x'+op.h+'|'+t):t;await api('/api/edit',{id,text:nt});applyCh([{id,text:nt,gone:false,edited:true}])}
   else{
    const body=peer.kind?{cid:peer.id,text:t}:{to:peer.id,text:t};
    if(replyTo)body.reply=replyTo.id;
