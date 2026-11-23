@@ -1,0 +1,290 @@
+const I18n=(()=>{
+const TXT=`
+چت‌ها ||| Chats
+مخاطبین ||| Contacts
+بازی‌ها ||| Games
+منو ||| Menu
+تنظیمات ||| Settings
+پیکوین ||| Picoin
+مشکل از سرور ||| Server problem
+ورود ||| Log in
+ساخت حساب ||| Create account
+نام کاربری (انگلیسی) ||| Username (English letters)
+اسم نمایشی ||| Display name
+رمز عبور (حداقل ۴ حرف) ||| Password (at least 4 characters)
+ثبت‌نام ||| Sign up
+حساب داری؟ ورود ||| Have an account? Log in
+حساب نداری؟ ثبت‌نام ||| No account? Sign up
+حساب نداری؟ ساخت حساب ||| No account? Create one
+ادامه بدون حساب (فقط بازی‌ها) ||| Continue without account (games only)
+نام کاربری باید ۳ تا ۲۰ حرف انگلیسی، عدد یا _ باشه ||| Username must be 3-20 English letters, digits or _
+رمز عبور خیلی کوتاهه ||| Password is too short
+این نام کاربری قبلاً گرفته شده ||| This username is already taken
+نام کاربری یا رمز اشتباهه ||| Wrong username or password
+اول وارد حساب شو ||| Please log in first
+جستجوی کاربر، گروه و کانال ||| Search users, groups and channels
+هنوز چتی نداری. بالا دنبال یه نفر بگرد ||| No chats yet. Search for someone above
+پیدا نشد ||| Not found
+در حال اتصال... ||| Connecting...
+آنلاین ||| Online
+مدتی پیش ||| A while ago
+عکس ||| Photo
+بازگشت ||| Back
+پیام... ||| Message...
+پاسخ ||| Reply
+کپی ||| Copy
+هدایت ||| Forward
+ویرایش ||| Edit
+حذف ||| Delete
+ویرایش پیام ||| Edit message
+پاسخ به خودت ||| Reply to yourself
+تو ||| You
+پیام حذف شده ||| Deleted message
+ویرایش‌شده ||| edited
+کپی شد ||| Copied
+هدایت شد ||| Forwarded
+اضافه شد ||| Added
+خارج شدی ||| You left
+عکس خونده نشد ||| Couldn't read the photo
+در حال ارسال... ||| Sending...
+هدایت به... ||| Forward to...
+جستجوی کاربر ||| Search users
+چیزی پیدا نشد ||| Nothing found
+حذف پیام ||| Delete message
+حذف برای من ||| Delete for me
+حذف برای هر دو ||| Delete for both
+حذف برای همه ||| Delete for everyone
+انصراف ||| Cancel
+فقط مدیران می‌تونن توی این کانال پیام بفرستن ||| Only admins can post in this channel
+فقط مدیران می‌تونن پیام بفرستن ||| Only admins can post
+عضویت ||| Join
+اطلاعات کانال ||| Channel info
+اطلاعات گروه ||| Group info
+افزودن عضو ||| Add member
+ترک کانال ||| Leave channel
+ترک گروه ||| Leave group
+مالک ||| Owner
+مدیر ||| Admin
+کانال ||| Channel
+گروه ||| Group
+کاربری پیدا نشد ||| No user found
+ساخت گروه یا کانال ||| Create group or channel
+نام ||| Name
+آدرس عمومی (اختیاری) ||| Public address (optional)
+توضیحات (اختیاری) ||| Description (optional)
+بساز ||| Create
+گروه: همه‌ی اعضا می‌تونن پیام بفرستن ||| Group: all members can post
+کانال: فقط مدیران پیام می‌فرستن و بقیه می‌خونن ||| Channel: only admins post, everyone else reads
+توضیح (اختیاری) ||| Caption (optional)
+ارسال ||| Send
+دانلود ||| Download
+نام لازمه ||| A name is required
+آدرس باید ۴ تا ۲۵ حرف انگلیسی، عدد یا _ باشه ||| Address must be 4-25 English letters, digits or _
+این آدرس قبلاً گرفته شده ||| This address is already taken
+دسترسی نداری ||| Access denied
+مالک نمی‌تونه ترک کنه ||| The owner can't leave
+فقط مدیر می‌تونه عضو اضافه کنه ||| Only admins can add members
+کاربر پیدا نشد ||| User not found
+عضو نیستی ||| You are not a member
+پیام خالیه ||| Message is empty
+پیام پیدا نشد ||| Message not found
+نمی‌شه ویرایش کرد ||| Can't edit this message
+عکس معتبر نیست ||| Invalid photo
+عکس خیلی بزرگه ||| Photo is too large
+اسم نباید خالی باشه ||| Name can't be empty
+خطا ||| Error
+آنلاین · ||| Online ·
+تنظیم عکس ||| Set photo
+ویرایش اطلاعات ||| Edit info
+حساب‌های کاربری ||| Accounts
+مدیریت حساب‌ها ||| Manage accounts
+تنظیمات پیکو ||| Picko settings
+درباره ||| About
+حساب کاربری ||| Account
+اسم، نام کاربری، خروج از حساب ||| Name, username, log out
+تنظیمات گفتگو ||| Chat settings
+پس‌زمینه، حالت شب، انیمیشن‌ها ||| Background, night mode, animations
+حریم خصوصی و امنیت ||| Privacy and security
+آخرین بازدید، دستگاه‌ها، کلیدهای عبور ||| Last seen, devices, passkeys
+اعلان‌ها ||| Notifications
+صداها، تماس‌ها، نشانگرها ||| Sounds, calls, badges
+داده‌ها و ذخیره‌سازی ||| Data and storage
+تنظیمات دانلود رسانه ||| Media download settings
+پوشه‌های گفتگو ||| Chat folders
+مرتب‌سازی گفتگوها در پوشه‌ها ||| Organize chats into folders
+دستگاه‌ها ||| Devices
+مدیریت دستگاه‌های متصل شده ||| Manage connected devices
+ذخیره انرژی ||| Power saving
+کاهش مصرف انرژی در شارژ کم ||| Reduce power use when battery is low
+زبان ||| Language
+راهنمایی ||| Help
+پرسیدن سؤال ||| Ask a question
+پرسش‌های متداول پیکو ||| Picko FAQ
+سیاست حریم خصوصی ||| Privacy policy
+حالت شب ||| Night mode
+انیمیشن‌ها ||| Animations
+صدای پیام‌ها ||| Message sounds
+اندازه‌ی متن پیام‌ها ||| Message text size
+ریاکشن دوبار ضربه ||| Double-tap reaction
+تغییر ||| Change
+خاموش ||| Off
+پس‌زمینه‌ی چت ||| Chat background
+با زدن روی نام کاربری، کپی می‌شه ||| Tap the username to copy it
+خروج از حساب ||| Log out
+نام کاربری ||| Username
+وضعیت سرور ||| Server status
+متصل ||| Connected
+قطع ||| Disconnected
+آدرس سرور ||| Server address
+ذخیره ||| Save
+برگشت به حالت خودکار ||| Reset to automatic
+کاهش مصرف انرژی ||| Reduce power use
+با روشن بودنش انیمیشن‌ها خاموش می‌شن تا باتری کمتر مصرف بشه. ||| Turns animations off to save battery.
+نسخه‌ی آزمایشی ||| Beta version
+پیام‌رسان شخصی پیکو ||| Picko personal messenger
+ذخیره شد ||| Saved
+ذخیره نشد، سرور رو چک کن ||| Couldn't save, check the server
+دانلود خودکار ||| Auto-download
+دانلود خودکار عکس‌ها ||| Auto-download photos
+اگه خاموش باشه، عکس‌ها فقط با زدن روی «دانلود» باز می‌شن و داده‌ی کمتری مصرف می‌شه. ||| When off, photos only load when you tap "Download", saving data.
+کیفیت عکس‌های ارسالی ||| Sent photo quality
+معمولی ||| Standard
+بالا ||| High
+کیفیت بالا عکس رو تا ۱۹۲۰ پیکسل می‌فرسته و حجم بیشتری داره. ||| High quality sends photos up to 1920 px and uses more data.
+به‌زودی ||| Coming soon
+عکس پروفایل عوض شد ||| Profile photo updated
+آپلود نشد، سرور رو چک کن ||| Upload failed, check the server
+گروه جدید ||| New group
+کانال جدید ||| New channel
+گفتگوی محرمانه جدید ||| New secret chat
+مرتب شده بر اساس آخرین زمان بازدید ||| Sorted by last seen
+برای دیدن مخاطبین وارد حساب شو ||| Log in to see your contacts
+در حال بارگذاری... ||| Loading...
+هنوز مخاطبی نداری. با دکمه‌ی پایین یکی اضافه کن ||| No contacts yet. Add one with the button below
+افزودن مخاطب ||| Add contact
+نام کاربری یا اسم ||| Username or name
+انتخاب عکس ||| Choose photo
+گالری ||| Gallery
+استفاده از ایموجی ||| Use an emoji
+نقاشی ||| Drawing
+پاک کردن ||| Clear
+ساخت عکس نشد ||| Couldn't create the photo
+با ربات ||| With bots
+با دوستان روی همین گوشی ||| With friends on this phone
+۲ نفره ||| 2 players
+۳ نفره ||| 3 players
+۴ نفره ||| 4 players
+بازی کن ||| Play
+تو در برابر ربات‌ها، بدون اینترنت و بدون سرور ||| You vs bots, no internet or server needed
+همه نوبتی روی همین گوشی بازی می‌کنین ||| Take turns playing on this phone
+بازی آنلاین بعد از ساخت سرور اضافه می‌شه ||| Online play will be added after the server is built
+تاس رو بزن ||| Roll the dice
+مهره رو انتخاب کن ||| Pick a piece
+حرکتی نداره ||| No moves
+بردی ||| You won
+دفعه‌ی بعد ||| Better luck next time
+دوباره ||| Again
+نوبت ||| Turn
+`;
+const EN=new Map();
+TXT.split('\n').forEach(l=>{const i=l.indexOf(' ||| ');if(i>0)EN.set(l.slice(0,i).trim(),l.slice(i+5).trim())});
+[['قرمز','Red'],['سبز','Green'],['زرد','Yellow'],['آبی','Blue']].forEach(([f,e])=>{
+ EN.set('ربات '+f,e+' bot');EN.set('بازیکن '+f,e+' player');
+ EN.set('ربات '+f+' برد',e+' bot won');EN.set('بازیکن '+f+' برد',e+' player won');
+});
+const RX=[
+ [/^([\d۰-۹]+) انتخاب شده$/,'$1 selected'],
+ [/^پاسخ به (.+)$/,'Reply to $1'],
+ [/^هدایت‌شده از (.+)$/,'Forwarded from $1'],
+ [/^آخرین بازدید امروز (.+)$/,'Last seen today $1'],
+ [/^آخرین بازدید دیروز (.+)$/,'Last seen yesterday $1'],
+ [/^آخرین بازدید (.+)$/,'Last seen $1'],
+ [/^حذف ([\d۰-۹]+) پیام$/,'Delete $1 messages'],
+ [/^([\d۰-۹٫.]+) میلیون عضو$/,'$1 million members'],
+ [/^([\d۰-۹٬,]+) عضو$/,'$1 members'],
+ [/^\+([\d۰-۹]+) پیکوین$/,'+$1 Picoin'],
+ [/^([\d۰-۹]+) پیکسل$/,'$1 px']
+];
+const DA=[
+ [/حذف شده/g,'پاک شده'],[/حذف/g,'پاک کردن'],
+ [/می‌تونن/g,'می‌توانند'],[/می‌تونی/g,'می‌توانی'],[/می‌تونه/g,'می‌تواند'],
+ [/می‌شه/g,'می‌شود'],[/می‌شن/g,'می‌شوند'],
+ [/می‌خونن/g,'می‌خوانند'],[/می‌فرستن/g,'می‌فرستند'],[/می‌فرسته/g,'می‌فرستد'],[/می‌کنین/g,'می‌کنید'],
+ [/خونده/g,'خوانده'],[/اگه/g,'اگر'],
+ [/(^|\s)یه(?=\s)/g,'$1یک'],
+ [/(^|\s)رو(?=\s|$|[.،؟!])/g,'$1را'],
+ [/نداره/g,'ندارد'],[/لازمه/g,'لازم است'],[/خالیه/g,'خالی است'],[/کوتاهه/g,'کوتاه است'],[/بزرگه/g,'بزرگ است'],[/اشتباهه/g,'اشتباه است'],[/باشه/g,'باشد'],
+ [/دوربین/g,'کمره'],[/کپی/g,'کاپی'],[/پاسخ/g,'جواب'],[/خروج از/g,'بیرون شدن از'],[/اعلان‌ها/g,'اطلاعیه‌ها'],[/اسم/g,'نام']
+];
+const ME={'فروردین':'Farvardin','اردیبهشت':'Ordibehesht','خرداد':'Khordad','تیر':'Tir','مرداد':'Mordad','شهریور':'Shahrivar','مهر':'Mehr','آبان':'Aban','آذر':'Azar','دی':'Dey','بهمن':'Bahman','اسفند':'Esfand'};
+const MD={'فروردین':'حمل','اردیبهشت':'ثور','خرداد':'جوزا','تیر':'سرطان','مرداد':'اسد','شهریور':'سنبله','مهر':'میزان','آبان':'عقرب','آذر':'قوس','دی':'جدی','بهمن':'دلو','اسفند':'حوت'};
+let lang=store.get('lang','fa');
+function tr(s){
+ if(lang=='fa'||!s)return s;
+ const m=/^(\s*)([\s\S]*?)(\s*)$/.exec(s);
+ let c=m[2];if(!c)return s;
+ const mon=c.match(/^(آخرین بازدید [\d۰-۹]+ )(\S+)$/);
+ if(lang=='en'){
+  if(mon)c=mon[1]+(ME[mon[2]]||mon[2]);
+  let out=EN.get(c);
+  if(out===undefined){
+   out=c;
+   for(const [r,t] of RX){if(r.test(c)){out=c.replace(r,t);break}}
+  }
+  out=out.replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/٫/g,'.').replace(/٬/g,',');
+  return m[1]+out+m[3];
+ }
+ if(mon)c=mon[1]+(MD[mon[2]]||mon[2]);
+ for(const [r,t] of DA)c=c.replace(r,t);
+ return m[1]+c+m[3];
+}
+const AT=['placeholder','data-ph','title'];
+const orig=new WeakMap();
+function skipEl(e){return e&&e.closest&&e.closest('.bt,#ci,.rp span,textarea,script,style')}
+function text(n){
+ const p=n.parentElement;if(!p||skipEl(p))return;
+ const v=n.nodeValue,o=orig.get(n);
+ const src=(o&&v===o.out)?o.src:v;
+ const out=tr(src);
+ orig.set(n,{src,out});
+ if(out!==v)n.nodeValue=out;
+}
+function attrs(e){
+ if(e.closest&&e.closest('.bt'))return;
+ AT.forEach(a=>{
+  if(!e.hasAttribute(a))return;
+  const v=e.getAttribute(a),k='_i_'+a,o=e[k];
+  const src=(o&&v===o.out)?o.src:v;
+  const out=tr(src);
+  e[k]={src,out};
+  if(out!==v)e.setAttribute(a,out);
+ });
+}
+function walk(n){
+ if(n.nodeType==3){text(n);return}
+ if(n.nodeType!=1)return;
+ const t=n.tagName;if(t=='SCRIPT'||t=='STYLE')return;
+ attrs(n);
+ n.childNodes.forEach(walk);
+}
+const mo=new MutationObserver(ms=>{
+ for(const m of ms){
+  if(m.type=='childList')m.addedNodes.forEach(walk);
+  else if(m.type=='characterData')text(m.target);
+  else if(m.type=='attributes')attrs(m.target);
+ }
+});
+function dirs(){
+ const h=document.documentElement;
+ h.lang=lang=='en'?'en':(lang=='da'?'fa-AF':'fa');
+ h.dir=lang=='en'?'ltr':'rtl';
+}
+function set(c){
+ lang=c;store.set('lang',c);dirs();
+ walk(document.body);
+ if(typeof MenuUI!=='undefined')MenuUI.refresh();
+}
+if(lang!='fa'){dirs();walk(document.body)}
+mo.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:AT});
+return{set,get:()=>lang};
+})();

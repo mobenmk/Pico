@@ -1,9 +1,25 @@
 import re, time, base64, secrets
 from flask import request, jsonify, Response
 
+def phinfo(c, d, uid):
+    p = d.get("ph")
+    if not isinstance(p, dict):
+        return (None, None, None)
+    tok = str(p.get("id", ""))
+    if not re.fullmatch(r"[a-f0-9]{24}", tok):
+        return (None, None, None)
+    r = c.execute("select w,h from photos where id=?", (tok,)).fetchone()
+    if not r:
+        return (None, None, None)
+    return (tok, r["w"], r["h"])
+
 def setup(app, db, me, err, toint):
     c = db()
     c.execute("create table if not exists photos(id text primary key, uid integer, data blob, w integer, h integer, ts real)")
+    cols = [r[1] for r in c.execute("pragma table_info(msgs)")]
+    for n, t in (("ph", "text"), ("pw", "integer"), ("phh", "integer")):
+        if n not in cols:
+            c.execute("alter table msgs add column %s %s" % (n, t))
     c.commit(); c.close()
 
     @app.route("/api/photo", methods=["POST"])

@@ -127,7 +127,7 @@ def mj(r, i, rx=None):
         rt = dict(id=r["reply"], text=(None if r["rgone"] else r["rtext"]), mine=(r["ra"] == i))
     return dict(id=r["id"], text=r["text"], ts=r["ts"], mine=(r["a"] == i), fwd=r["fwd"], edited=bool(r["edited"]), reply=rt, rx=rx)
 
-MSQ = """select m.id,m.a,m.text,m.ts,m.reply,m.fwd,m.edited,
+MSQ = """select m.id,m.a,m.text,m.ts,m.reply,m.fwd,m.edited,m.ph,m.pw,m.phh,(select ph from msgs where id=m.reply) rph,
  (select text from msgs where id=m.reply) rtext,(select a from msgs where id=m.reply) ra,(select gone from msgs where id=m.reply) rgone"""
 VIS = "((a=? and b=? and ha is null) or (a=? and b=? and hb is null))"
 
@@ -147,7 +147,7 @@ def send():
     if rep and not c.execute("select 1 from msgs where id=? and ((a=? and b=?) or (a=? and b=?))", (rep, u["id"], to, to, u["id"])).fetchone():
         rep = None
     ts = time.time()
-    cur = c.execute("insert into msgs(a,b,text,ts,reply,fwd) values(?,?,?,?,?,?)", (u["id"], to, text, ts, rep, fwd))
+    cur = c.execute("insert into msgs(a,b,text,ts,reply,fwd,ph,pw,phh) values(?,?,?,?,?,?,?,?,?)", (u["id"], to, text, ts, rep, fwd) + phinfo(c, d, u["id"]))
     c.commit(); mid = cur.lastrowid
     r = c.execute(MSQ + " from msgs m where m.id=?", (mid,)).fetchone()
     c.close()
@@ -246,7 +246,7 @@ def chats():
     c = db()
     c.execute("update msgs set dlv=? where b=? and dlv is null", (now, i))
     c.commit()
-    rows = c.execute("""select x.id,x.username,x.name,x.last_seen,m.text,m.ts,m.a,m.dlv,m.seen,
+    rows = c.execute("""select x.id,x.username,x.name,x.last_seen,case when m.ph is not null and trim(coalesce(m.text,''),char(8291))='' then 'عکس' else m.text end as text,m.ts,m.a,m.dlv,m.seen,
       (select count(*) from msgs where a=x.id and b=? and seen is null and gone is null and hb is null) as unread
       from users x join msgs m on m.id=(select max(id) from msgs where gone is null and ((a=? and b=x.id and ha is null) or (a=x.id and b=? and hb is null)))
       where x.id!=? order by m.id desc""", (i, i, i, i)).fetchall()
@@ -266,6 +266,18 @@ import contacts
 contacts.setup(app, db, me, err, toint)
 import photos
 photos.setup(app, db, me, err, toint)
+from photos import phinfo
+
+_mj0 = mj
+def mj(r, i, rx=None):
+    d = _mj0(r, i, rx)
+    try:
+        d["ph"] = dict(id=r["ph"], w=r["pw"], h=r["phh"]) if r["ph"] else None
+        if d.get("reply") is not None:
+            d["reply"]["ph"] = bool(r["rph"])
+    except (IndexError, KeyError):
+        pass
+    return d
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, threaded=True)

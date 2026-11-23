@@ -96,7 +96,11 @@ function pgEco(){
  sub('ذخیره انرژی',`<div class="mc"><div class="sw"><span>کاهش مصرف انرژی</span>${tg('t-eco',store.get('eco',false)===true)}</div></div><p class="mu hint">با روشن بودنش انیمیشن‌ها خاموش می‌شن تا باتری کمتر مصرف بشه.</p>`,()=>bindTg('t-eco',on=>{store.set('eco',on);applyPrefs()}));
 }
 function pgLang(){
- sub('زبان',`<div class="mc"><div class="sw"><span>فارسی</span><span class="ck">${svg(G.tick)}</span></div><div class="sw" id="en"><span>English</span><small class="mu">به‌زودی</small></div></div>`,()=>{q('#en').onclick=()=>toast('به‌زودی')});
+ const cur=store.get('lang','fa');
+ const L=[['fa','فارسی'],['da','دری'],['en','English']];
+ sub('زبان',`<div class="mc">${L.map(l=>`<div class="sw" data-l="${l[0]}"><span>${l[1]}</span>${cur==l[0]?`<span class="ck">${svg(G.tick)}</span>`:''}</div>`).join('')}</div>`,()=>{
+  document.querySelectorAll('#spg [data-l]').forEach(e=>e.onclick=()=>{if(typeof I18n!=='undefined')I18n.set(e.dataset.l);pgLang()});
+ });
 }
 function pgAbout(){
  sub('درباره',`<div class="mh"><div class="mav">P</div><h2>Picko</h2><p>نسخه‌ی آزمایشی</p></div><div class="mc"><div class="sw"><span>پیام‌رسان شخصی پیکو</span></div></div>`);
@@ -158,7 +162,7 @@ function main(){
  return `<div class="mh"><div class="mav">${aimg(a)}${ch}<button class="mcam" data-a="cam">${svg(G.cam)}</button></div><h2>${esc(a.name)}</h2><p>آنلاین · <span dir="ltr">@${esc(a.username)}</span></p><div class="mbtns"><button class="mbn" data-a="cam">${svg(G.cam)}<span>تنظیم عکس</span></button><button class="mbn" data-a="edit">${svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>')}<span>ویرایش اطلاعات</span></button><button class="mbn" data-a="goset">${svg(G.gear)}<span>تنظیمات</span></button></div></div>
  <div class="mc"><div class="msec">حساب‌های کاربری</div><div class="mr" data-a="acct"><span class="mav2">${aimg(a)}${ch}</span><div class="mt"><b>${esc(a.name)}</b></div></div>${row('user','#22b8cf','مدیریت حساب‌ها','','soon')}</div>
  <div class="mc">${row('gear','#34c759','تنظیمات پیکو','','pk')}${row('info','#ff9f0a','درباره','','about')}</div>
- <div class="mc">${row('user','#2f9bff','حساب کاربری','اسم، نام کاربری، خروج از حساب','acct')}${row('chat','#ff9f0a','تنظیمات گفتگو','پس‌زمینه، حالت شب، انیمیشن‌ها','chat')}${row('key','#34c759','حریم خصوصی و امنیت','آخرین بازدید، دستگاه‌ها، کلیدهای عبور','soon')}${row('spk','#ff4d6d','اعلان‌ها','صداها، تماس‌ها، نشانگرها','soon')}${row('data','#3b82f6','داده‌ها و ذخیره‌سازی','تنظیمات دانلود رسانه','data')}${row('folder','#2f9bff','پوشه‌های گفتگو','مرتب‌سازی گفتگوها در پوشه‌ها','soon')}${row('laptop','#22b8cf','دستگاه‌ها','مدیریت دستگاه‌های متصل شده','soon')}${row('bat','#ff9f0a','ذخیره انرژی','کاهش مصرف انرژی در شارژ کم','eco')}${row('globe','#a855f7','زبان','فارسی','lang')}</div>
+ <div class="mc">${row('user','#2f9bff','حساب کاربری','اسم، نام کاربری، خروج از حساب','acct')}${row('chat','#ff9f0a','تنظیمات گفتگو','پس‌زمینه، حالت شب، انیمیشن‌ها','chat')}${row('key','#34c759','حریم خصوصی و امنیت','آخرین بازدید، دستگاه‌ها، کلیدهای عبور','soon')}${row('spk','#ff4d6d','اعلان‌ها','صداها، تماس‌ها، نشانگرها','soon')}${row('data','#3b82f6','داده‌ها و ذخیره‌سازی','تنظیمات دانلود رسانه','data')}${row('folder','#2f9bff','پوشه‌های گفتگو','مرتب‌سازی گفتگوها در پوشه‌ها','soon')}${row('laptop','#22b8cf','دستگاه‌ها','مدیریت دستگاه‌های متصل شده','soon')}${row('bat','#ff9f0a','ذخیره انرژی','کاهش مصرف انرژی در شارژ کم','eco')}${row('globe','#a855f7','زبان',({fa:'فارسی',da:'دری',en:'English'})[store.get('lang','fa')],'lang')}</div>
  <div class="mc"><div class="msec">راهنمایی</div>${row('dots','#ff9f0a','پرسیدن سؤال','','soon')}${row('q','#3b82f6','پرسش‌های متداول پیکو','','soon')}${row('shield','#34c759','سیاست حریم خصوصی','','soon')}</div>`;
 }
 let lastKey=null;

@@ -114,10 +114,11 @@ async function loadChats(){
 }
 const PHR=/^#ph:([a-f0-9]{24}):(\d+)x(\d+)\|([\s\S]*)$/;
 function PH(t){const m=PHR.exec(t||'');return m?{id:m[1],w:+m[2],h:+m[3],cap:m[4]}:null}
-function capOf(t){const p=PH(t);return p?p.cap:(t||'')}
-function prevT(t){const p=PH(t);return (p?('عکس'+(p.cap?' · '+p.cap:'')):(t||'')).slice(0,80)}
+function capOf(t){const p=PH(t);return p?p.cap:(t||'').split('\u2063').join('')}
+function phOf(m){if(m.ph)return{id:m.ph.id,w:m.ph.w,h:m.ph.h,cap:(m.text||'').split('\u2063').join('')};return PH(m.text)}
+function prevT(t){const p=PH(t);return (p?('عکس'+(p.cap?' · '+p.cap:'')):(t||'')).split('\u2063').join('').slice(0,80)}
 function phHtml(m){
- const p=PH(m.text);if(!p)return '';
+ const p=phOf(m);if(!p)return '';
  const auto=store.get('autodl',true)!==false;
  return `<div class="ph" data-p="${p.id}" style="width:${Math.min(280,p.w)}px;aspect-ratio:${p.w}/${p.h}">${auto?`<img src="${PICKO_SERVER}/api/photo/${p.id}">`:'<button class="dl">دانلود</button>'}</div>`;
 }
@@ -151,18 +152,28 @@ function prepPhoto(f){
 }
 function previewPhoto(du,w,h){
  const d=document.createElement('div');d.id='pv';
- d.innerHTML=`<div class="pvh"><button class="lb" id="pvx">بازگشت</button></div><div class="pvi"><img src="${du}"></div><div class="pvc"><input class="in" id="pvt" placeholder="توضیح (اختیاری)"><button class="pb" id="pvs">ارسال</button></div>`;
+ d.innerHTML=`<div class="pvh"><button class="lb" id="pvx">بازگشت</button></div><div class="pvi"><img src="${du}"></div><div class="pvc"><input class="in" id="pvt" placeholder="توضیح (اختیاری)"><button class="pb snd" id="pvs">${ic('<path d="M21 3L10 14"/><path d="M21 3l-7 18-4-8-8-4z"/>')}</button></div>`;
  document.body.appendChild(d);
  $('#pvx').onclick=()=>d.remove();
  $('#pvs').onclick=async()=>{
-  const b=$('#pvs');b.disabled=true;b.textContent='در حال ارسال...';
+  const b=$('#pvs');b.disabled=true;b.classList.add('busy');
   try{
    const r=await api('/api/photo',{img:du,w,h});
    const cap=$('#pvt').value.trim();
    d.remove();
-   await sendText('#ph:'+r.id+':'+w+'x'+h+'|'+cap);
-  }catch(e){toast(e.message);b.disabled=false;b.textContent='ارسال'}
+   await sendPhoto(r.id,w,h,cap);
+  }catch(e){toast(e.message);b.disabled=false;b.classList.remove('busy')}
  };
+}
+async function sendPhoto(id,w,h,cap){
+ if(!peer)return;
+ const body=peer.kind?{cid:peer.id}:{to:peer.id};
+ body.text=cap||'\u2063';body.ph={id,w,h};
+ if(replyTo)body.reply=replyTo.id;
+ try{
+  const j=await api(peer.kind?'/api/csend':'/api/send',body);
+  add([j.message],true);if(!peer.kind)setTicks();sndSend();clearBar();
+ }catch(e){toast(e.message)}
 }
 async function sendText(t){
  if(!peer)return;
@@ -173,6 +184,15 @@ async function sendText(t){
   add([j.message],true);if(!peer.kind)setTicks();sndSend();clearBar();
  }catch(e){toast(e.message)}
 }
+let stick=true;
+function fit(){
+ const v=$('#chatv');if(!v)return;
+ const vv=window.visualViewport;
+ if(vv){v.style.height=vv.height+'px';v.style.top=vv.offsetTop+'px';v.style.bottom='auto'}
+ if(stick){const b=$('#msgs');if(b)b.scrollTop=b.scrollHeight}
+}
+if(window.visualViewport){visualViewport.addEventListener('resize',fit);visualViewport.addEventListener('scroll',fit)}
+window.addEventListener('resize',fit);
 function ser(n){let s='';n.childNodes.forEach(c=>{if(c.nodeType==3)s+=c.nodeValue;else if(c.classList&&c.classList.contains('ep'))s+=':'+c.dataset.n+':';else if(c.nodeName=='BR')s+='\n';else if(c.nodeName=='DIV')s+='\n'+ser(c);else s+=ser(c)});return s}
 function insertEmoji(n){
  const ci=$('#ci');if(!ci)return;
@@ -239,7 +259,7 @@ function bub(m){
  const conv=peer&&peer.kind;
  const sn=(conv&&!m.mine)?`<div class="sn" style="color:${NC(m.uid||0)}">${esc(m.sn||'')}</div>`:'';
  const f=m.fwd?`<div class="fw">هدایت‌شده از ${esc(m.fwd)}</div>`:'';
- const r=m.reply?`<div class="rp" data-r="${m.reply.id}"><b>${m.reply.mine?'تو':esc(m.reply.sn||peer.name)}</b><span>${m.reply.text==null?'پیام حذف شده':PE.render(prevT(m.reply.text).slice(0,100))}</span></div>`:'';
+ const r=m.reply?`<div class="rp" data-r="${m.reply.id}"><b>${m.reply.mine?'تو':esc(m.reply.sn||peer.name)}</b><span>${m.reply.text==null?'پیام حذف شده':PE.render(prevT(m.reply.text).slice(0,100)||(m.reply.ph?'عکس':''))}</span></div>`:'';
  return `<div class="bub ${m.mine?'me':''}" data-id="${m.id}"><span class="swi">${I.reply}</span>${sn}${f}${r}${phHtml(m)}<div class="bt">${PE.render(capOf(m.text))}</div><div class="rxw">${rxHtml(m)}</div><small><span class="ed">${m.edited?'ویرایش‌شده ':''}</span><span class="tm">${hm(m.ts)}</span>${(m.mine&&!conv)?'<span class="tkw"></span>':''}<svg class="mo" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></small></div>`;
 }
 function add(ms,force){
@@ -307,7 +327,7 @@ function showMenu(b,only){
 function bar(kind,m){
  const el=$('#rbar');if(!el)return;
  el.className='on';
- el.innerHTML=`<div class="rbi"><b>${kind=='r'?'پاسخ به '+(m.mine?'خودت':esc(m.sn||peer.name)):'ویرایش پیام'}</b><span>${PE.render(prevT(m.text).slice(0,120))}</span></div><button class="pk" id="rx">${I.x}</button>`;
+ el.innerHTML=`<div class="rbi"><b>${kind=='r'?'پاسخ به '+(m.mine?'خودت':esc(m.sn||peer.name)):'ویرایش پیام'}</b><span>${PE.render(prevT(m.text).slice(0,120)||(m.ph?'عکس':''))}</span></div><button class="pk" id="rx">${I.x}</button>`;
  $('#rx').onclick=cancelBar;
 }
 function clearBar(){replyTo=null;editing=null;const el=$('#rbar');if(el){el.className='';el.innerHTML=''}}
@@ -349,7 +369,7 @@ async function doFwd(list,to,k){
  try{
   for(const id of list){
    const m=MS.get(id);if(!m)continue;
-   const body={text:m.text,fwd:m.fwd||(m.mine?A().name:(m.sn||peer.name))};
+   const body={text:m.text||'\u2063',fwd:m.fwd||(m.mine?A().name:(m.sn||peer.name))};if(m.ph)body.ph={id:m.ph.id,w:m.ph.w,h:m.ph.h};
    if(k)body.cid=to;else body.to=to;
    await api(k?'/api/csend':'/api/send',body);
   }
@@ -469,12 +489,12 @@ function openChat(id,name,kind,meta){
  if(open)return;
  {const o=$('#chatv');if(o)o.remove()}peer={id,name,kind:kind||'',role:(meta&&meta.role)||'',members:(meta&&meta.members)||0};last=0;dl=0;rd=0;since=0;rng=null;replyTo=null;editing=null;sel.clear();MS.clear();open=true;document.body.classList.add('inchat');
  const v=document.createElement('div');v.id='chatv';
- v.innerHTML=`<div class="chead"><button class="lb" id="cb">بازگشت</button><div class="t"><b>${esc(name)}${meta&&meta.verified?VT:''}</b><small id="cst">${kind?cnt(meta&&meta.members):''}</small></div></div><div class="selbar"><button class="pk" id="sax">${I.x}</button><b id="scount"></b><span class="sp"></span><button class="pk" id="sa-reply">${I.reply}</button><button class="pk" id="sa-edit">${I.edit}</button><button class="pk" id="sa-copy">${I.copy}</button><button class="pk" id="sa-fwd">${I.fwd}</button><button class="pk" id="sa-del">${I.del}</button></div><div id="msgs"></div><div id="rbar"></div><div class="row cin"><button id="ce"></button><button id="ca"></button><div id="ci" contenteditable="true" dir="auto" data-ph="پیام..."></div><button id="cs">ارسال</button></div><div id="lockbar"></div><div id="epan"></div>`;
+ v.innerHTML=`<div class="chead"><button class="lb" id="cb">بازگشت</button><div class="t"><b>${esc(name)}${meta&&meta.verified?VT:''}</b><small id="cst">${kind?cnt(meta&&meta.members):''}</small></div></div><div class="selbar"><button class="pk" id="sax">${I.x}</button><b id="scount"></b><span class="sp"></span><button class="pk" id="sa-reply">${I.reply}</button><button class="pk" id="sa-edit">${I.edit}</button><button class="pk" id="sa-copy">${I.copy}</button><button class="pk" id="sa-fwd">${I.fwd}</button><button class="pk" id="sa-del">${I.del}</button></div><div id="msgs"></div><div id="rbar"></div><div class="row cin"><button id="ce"></button><button id="ca"></button><div id="ci" contenteditable="true" dir="auto" data-ph="پیام..."></div><button id="cs" class="snd">${ic('<path d="M21 3L10 14"/><path d="M21 3l-7 18-4-8-8-4z"/>')}</button></div><div id="lockbar"></div><div id="epan"></div>`;
  document.body.appendChild(v);
  const ci=$('#ci');
  const saveR=()=>{const s=getSelection();if(s.rangeCount&&ci.contains(s.anchorNode))rng=s.getRangeAt(0).cloneRange()};
  ['keyup','touchend','input','blur','click'].forEach(e=>ci.addEventListener(e,saveR));
- ci.addEventListener('focus',()=>$('#epan').classList.remove('on'));
+ ci.addEventListener('focus',()=>{$('#epan').classList.remove('on');stick=true;setTimeout(fit,120);setTimeout(fit,350)});
  ci.addEventListener('paste',e=>{e.preventDefault();document.execCommand('insertText',false,(e.clipboardData||window.clipboardData).getData('text'))});
  $('#ce').innerHTML=PE.svg('smile',24);
  $('#ce').onpointerdown=e=>e.preventDefault();
@@ -487,7 +507,7 @@ function openChat(id,name,kind,meta){
  $('#cb').onclick=back;$('.chead .t').onclick=info;
  $('#sax').onclick=clearSel;$('#sa-reply').onclick=aReply;$('#sa-edit').onclick=aEdit;
  $('#sa-copy').onclick=aCopy;$('#sa-fwd').onclick=aFwd;$('#sa-del').onclick=aDel;
- gestures();buildPanel();lockCheck();
+ gestures();buildPanel();lockCheck();$('#msgs').addEventListener('scroll',()=>{const b=$('#msgs');if(b)stick=b.scrollHeight-b.scrollTop-b.clientHeight<140});stick=true;fit();
  poll();timer=setInterval(poll,2000);
 }
 function back(){const vw=$('#viewer')||$('#pv');if(vw){vw.remove();return true}

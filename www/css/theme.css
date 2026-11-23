@@ -314,3 +314,10 @@ body.noanim *,body.noanim *::before,body.noanim *::after{animation:none!importan
 .pvc .in{flex:1;margin:0;color:#fff}
 .pvc .pb{width:auto;margin:0;padding:12px 18px}
 .mc .seg{padding:0 12px 12px}
+.row button.snd,.pvc .snd{width:46px;height:46px;border-radius:50%;border:0;background:linear-gradient(135deg,#8b5cf6,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;padding:0;flex:none;box-shadow:0 0 12px rgba(139,92,246,.55)}
+.snd svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.snd.busy{opacity:.5}
+.snd:active{transform:scale(.92)}
+.bt{unicode-bidi:plaintext}
+html[dir=ltr] .bub{align-self:flex-start}
+html[dir=ltr] .bub.me{align-self:flex-end}

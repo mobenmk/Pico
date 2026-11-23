@@ -1,10 +1,11 @@
 import re, time, sqlite3
+from photos import phinfo
 from flask import request, jsonify
 
 OWNER = "mobenmk"
 DEMO_COUNTS = True
 
-CQ = """select m.id,m.a,m.text,m.ts,m.reply,m.fwd,m.edited,
+CQ = """select m.id,m.a,m.text,m.ts,m.reply,m.fwd,m.edited,m.ph,m.pw,m.phh,(select ph from msgs where id=m.reply) rph,
  (select name from users where id=m.a) sname,
  (select text from msgs where id=m.reply) rtext,
  (select a from msgs where id=m.reply) ra,
@@ -85,7 +86,7 @@ def setup(app, db, me, err, toint):
         rows = c.execute("select v.*, m.role as myrole, m.lr as mylr from convs v join cmem m on m.cid=v.id and m.uid=?", (i,)).fetchall()
         out = []
         for v in rows:
-            last = c.execute("select m.text,m.ts,x.name from msgs m join users x on x.id=m.a where m.b=? and m.gone is null order by m.id desc limit 1", (-v["id"],)).fetchone()
+            last = c.execute("select case when m.ph is not null and trim(coalesce(m.text,''),char(8291))='' then 'عکس' else m.text end as text,m.ts,x.name from msgs m join users x on x.id=m.a where m.b=? and m.gone is null order by m.id desc limit 1", (-v["id"],)).fetchone()
             un = c.execute("select count(*) n from msgs where b=? and id>? and a!=? and gone is null", (-v["id"], v["mylr"] or 0, i)).fetchone()["n"]
             out.append(dict(id=v["id"], kind=v["kind"], title=v["title"], uname=v["uname"], verified=bool(v["verified"]), role=v["myrole"],
                             members=count_of(c, v), text=(last["text"] if last else ""),
@@ -240,7 +241,7 @@ def setup(app, db, me, err, toint):
             c.close(); return err("فقط مدیران می‌تونن پیام بفرستن", 403)
         if rep and not c.execute("select 1 from msgs where id=? and b=?", (rep, -cid)).fetchone():
             rep = None
-        cur = c.execute("insert into msgs(a,b,text,ts,reply,fwd) values(?,?,?,?,?,?)", (u["id"], -cid, text, time.time(), rep, fwd))
+        cur = c.execute("insert into msgs(a,b,text,ts,reply,fwd,ph,pw,phh) values(?,?,?,?,?,?,?,?,?)", (u["id"], -cid, text, time.time(), rep, fwd) + phinfo(c, d, u["id"]))
         mid = cur.lastrowid
         c.execute("update cmem set lr=? where cid=? and uid=?", (mid, cid, u["id"]))
         c.commit()
@@ -287,3 +288,14 @@ def setup(app, db, me, err, toint):
                 c.execute("update msgs set gone=1, mt=? where id=?", (now, mid))
         c.commit(); c.close()
         return jsonify(ok=True)
+
+_mjc0 = mjc
+def mjc(r, i, rx):
+    d = _mjc0(r, i, rx)
+    try:
+        d["ph"] = dict(id=r["ph"], w=r["pw"], h=r["phh"]) if r["ph"] else None
+        if d.get("reply") is not None:
+            d["reply"]["ph"] = bool(r["rph"])
+    except (IndexError, KeyError):
+        pass
+    return d
