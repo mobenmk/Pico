@@ -266,6 +266,8 @@ import contacts
 contacts.setup(app, db, me, err, toint)
 import photos
 photos.setup(app, db, me, err, toint)
+import bio
+bio.setup(app, db, me, err, toint)
 from photos import phinfo
 
 _mj0 = mj

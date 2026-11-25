@@ -185,6 +185,72 @@ const TXT=`
 دفعه‌ی بعد ||| Better luck next time
 دوباره ||| Again
 نوبت ||| Turn
+نام شما ||| Your name
+نام خانوادگی ||| Last name
+درباره ||| About
+چند کلمه درباره شما. ||| A few words about you.
+اطلاعات شما ||| Your info
+تولد ||| Birthday
+تعیین نشده ||| Not set
+تاریخ تولد فقط روی همین گوشی ذخیره می‌شه. ||| Your birthday is only saved on this phone.
+کانال شخصی ||| Personal channel
+خودکارسازی گفتگو ||| Chat automation
+جدید ||| NEW
+رباتی را انتخاب کنید که از طرف شما به پیام‌ها پاسخ دهد. ||| Choose a bot to answer messages on your behalf.
+خروج از حساب کاربری ||| Log out of account
+اندازه متن پیام ||| Message text size
+تغییر پس‌زمینه گفتگو ||| Change chat background
+تغییر پس‌زمینه لیست گفتگوها ||| Change chat list background
+تغییر رنگ نام ||| Change name color
+افکت پس زمینه ||| Background effect
+بر اساس تاریخ ||| By date
+نوع حباب پیام ||| Message bubble type
+شیشه‌ای ||| Glass
+ساده ||| Solid
+نوع تیک خوانده شدن پیام ||| Read receipt style
+استاندارد ||| Standard
+پوسته رنگی ||| Color theme
+تغییر به حالت روز ||| Switch to day mode
+تغییر به حالت شب ||| Switch to night mode
+گوشه‌های پیام ||| Message corners
+نمای لیست گفتگوها ||| Chat list view
+دو خطی ||| Two lines
+سه خطی ||| Three lines
+آیکون برنامه ||| App icon
+پیش‌فرض ||| Default
+کلاسیک ||| Classic
+اقیانوس ||| Ocean
+غروب ||| Sunset
+الگوی حرکتی کشیدن در لیست گفتگوها ||| Chat list swipe action
+بایگانی کردن ||| Archive
+بی‌صدا کردن ||| Mute
+حذف کردن ||| Delete
+انتخاب کنید که در هنگام کشیدن به سمت چپ در لیست گفتگوها، کدام عملیات انجام شود. (به‌زودی) ||| Choose what happens when you swipe left on a chat. (Coming soon)
+حالت شب خودکار ||| Auto night mode
+پیش‌فرض سیستم تاریک ||| System default (dark)
+مرورگر درون‌برنامه ||| In-app browser
+لینک‌های خارجی در داخل برنامه باز شوند ||| Open external links inside the app
+جلوه‌های حرکتی را برای ذخیره انرژی خاموش کنید ||| Turn motion effects off to save power
+استیکرها و اموجی‌ها ||| Stickers and emoji
+مدیریت استیکرها، اموجی‌ها و واکنش‌ها ||| Manage stickers, emoji and reactions
+رسانه‌ها و صدا ||| Media and sound
+زدن برای نمایش رسانه بعدی ||| Tap for next media
+در هنگام مشاهده رسانه‌ها، در نزدیکی لبه صفحه بزنید تا رسانه‌های دیگر را مشاهده کنید ||| While viewing media, tap near the screen edge to see other media
+بالا بردن جهت گوش دادن ||| Raise to listen
+با بالا بردن تلفن همراه به سمت گوش خود، صدا را به هندزفری انتقال دهید ||| Raise the phone to your ear to switch audio to the earpiece
+بالا بردن جهت صحبت ||| Raise to speak
+با بالا بردن تلفن همراه به سمت گوش خود، پیام‌های صوتی ضبط کنید ||| Raise the phone to your ear to record voice messages
+مکث موزیک در هنگام ضبط ||| Pause music while recording
+هنگامی که شروع به ضبط پیام ویدیویی می‌کنید، موزیک مکث شود ||| Pause music when you start recording a video message
+مکث موزیک هنگام پخش رسانه ||| Pause music while playing media
+میکروفن پیام‌های صوتی ||| Voice message microphone
+داخلی ||| Built-in
+سایر تنظیمات ||| Other settings
+به اشتراک‌گذاری مستقیم ||| Direct share
+نمایش گفتگوهای اخیر در منوی به اشتراک‌گذاری اندروید ||| Show recent chats in the Android share menu
+ارسال با Enter ||| Send with Enter
+واحدهای فاصله ||| Distance units
+خودکار ||| Automatic
 `;
 const EN=new Map();
 TXT.split('\n').forEach(l=>{const i=l.indexOf(' ||| ');if(i>0)EN.set(l.slice(0,i).trim(),l.slice(i+5).trim())});

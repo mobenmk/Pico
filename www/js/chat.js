@@ -503,7 +503,7 @@ function openChat(id,name,kind,meta){
  $('#ca').onpointerdown=e=>e.preventDefault();
  $('#ca').onclick=attach;
  $('#cs').onpointerdown=e=>e.preventDefault();
- $('#cs').onclick=send;
+ $('#cs').onclick=send;ci.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&store.get('enter',false)===true){e.preventDefault();send()}});
  $('#cb').onclick=back;$('.chead .t').onclick=info;
  $('#sax').onclick=clearSel;$('#sa-reply').onclick=aReply;$('#sa-edit').onclick=aEdit;
  $('#sa-copy').onclick=aCopy;$('#sa-fwd').onclick=aFwd;$('#sa-del').onclick=aDel;
