@@ -14,7 +14,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function snd(f,d=.08,t='sine',v=.12){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
 const DOTS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 const dice=(v,c)=>`<svg viewBox="0 0 40 40" width="64" height="64"><rect x="2" y="2" width="36" height="36" rx="10" fill="rgba(255,255,255,.1)" stroke="${c}" stroke-width="2"/>${(DOTS[v]||[]).map(k=>`<circle cx="${11+(k%3)*9}" cy="${11+((k/3)|0)*9}" r="3.2" fill="#fff"/>`).join('')}</svg>`;
-function coins(n){store.set('coins',store.get('coins',0)+n);$('#coinn').textContent=store.get('coins',0)}
+function coins(n){Wallet.earn(n).then(g=>{if(g<n)Wallet.note(g)})}
 const msg=t=>{const e=$('#lmsg');if(e)e.textContent=t};
 function board(){
  let s='<rect x=".1" y=".1" width="14.8" height="14.8" rx=".7" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.12)" stroke-width=".05"/>';

@@ -143,7 +143,7 @@ function pgChat(){
  <div class="mc"><div class="msec">نمای لیست گفتگوها</div><div class="cls" id="cls"><button data-c="two" class="${cl=='two'?'on':''}">${ml(2)}<span>دو خطی</span></button><button data-c="three" class="${cl=='three'?'on':''}">${ml(3)}<span>سه خطی</span></button></div></div>
  <div class="mc"><div class="msec">آیکون برنامه</div><div class="aic" id="aic">${icons}</div></div>
  <div class="mc"><div class="msec">الگوی حرکتی کشیدن در لیست گفتگوها</div><div class="sws" id="sws">${sws}</div></div>
- <p class="mu hint">انتخاب کنید که در هنگام کشیدن به سمت چپ در لیست گفتگوها، کدام عملیات انجام شود. (به‌زودی)</p>
+ <p class="mu hint">انتخاب کنید که در هنگام کشیدن گفتگو به سمت چپ در لیست گفتگوها، کدام عملیات انجام شود.</p>
  <div class="mc">${srow(IC.moon,'حالت شب خودکار','پیش‌فرض سیستم تاریک',tg('t-auto',store.get('autonight',false)===true),'')}${srow(IC.globe,'مرورگر درون‌برنامه','لینک‌های خارجی در داخل برنامه باز شوند',tg('c-browser',c('browser',false)),'')}${srow(IC.play,'انیمیشن‌ها','جلوه‌های حرکتی را برای ذخیره انرژی خاموش کنید',tg('t-anim',store.get('anim',true)!==false),'')}${srow(IC.sticker,'استیکرها و اموجی‌ها','مدیریت استیکرها، اموجی‌ها و واکنش‌ها','','react')}</div>
  <div class="mc"><div class="msec">رسانه‌ها و صدا</div>${trow('صدای پیام‌ها','','t-snd',store.get('snd',true)!==false)}${trow('زدن برای نمایش رسانه بعدی','در هنگام مشاهده رسانه‌ها، در نزدیکی لبه صفحه بزنید تا رسانه‌های دیگر را مشاهده کنید','c-next',c('next',false))}${trow('بالا بردن جهت گوش دادن','با بالا بردن تلفن همراه به سمت گوش خود، صدا را به هندزفری انتقال دهید','c-ear',c('ear',true))}${trow('بالا بردن جهت صحبت','با بالا بردن تلفن همراه به سمت گوش خود، پیام‌های صوتی ضبط کنید','c-speak',c('speak',false))}${trow('مکث موزیک در هنگام ضبط','هنگامی که شروع به ضبط پیام ویدیویی می‌کنید، موزیک مکث شود','c-prec',c('prec',false))}${trow('مکث موزیک هنگام پخش رسانه','','c-pmed',c('pmed',false))}${srow(null,'میکروفن پیام‌های صوتی','','<span class="sv">داخلی</span>','soon')}</div>
  <div class="mc"><div class="msec">سایر تنظیمات</div>${trow('به اشتراک‌گذاری مستقیم','نمایش گفتگوهای اخیر در منوی به اشتراک‌گذاری اندروید','c-share',c('share',true))}${trow('ارسال با Enter','','t-enter',store.get('enter',false)===true)}${srow(null,'واحدهای فاصله','','<span class="sv">خودکار</span>','soon')}</div>`;
@@ -227,16 +227,50 @@ function pgWall(kind){
   });
  },()=>pgChat());
 }
+function hsv2hex(h,s,v){
+ const f=n=>{const k=(n+h/60)%6;return v-v*s*Math.max(0,Math.min(k,4-k,1))};
+ const x=n=>Math.round(f(n)*255).toString(16).padStart(2,'0');
+ return '#'+x(5)+x(3)+x(1);
+}
+function hex2hsv(hx){
+ const r=parseInt(hx.slice(1,3),16)/255,g=parseInt(hx.slice(3,5),16)/255,b=parseInt(hx.slice(5,7),16)/255;
+ const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
+ let h=0;
+ if(d){if(mx==r)h=((g-b)/d)%6;else if(mx==g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360}
+ return [h,mx?d/mx:0,mx];
+}
 function pgColors(kind){
  const sel=store.get((kind=='c'?'cw':'lw')+'sel','');
  const t=DARKS.map((p,i)=>`<button class="wt${sel=='c'+i?' on':''}" data-i="${i}" style="background:linear-gradient(155deg,${p[0]},${p[1]})">${sel=='c'+i?`<span class="wck">${svg(IC.tick)}</span>`:''}</button>`).join('');
- sub('رنگی را انتخاب کنید',`<div class="wgrid sq" id="wg">${t}</div>`,d=>{
-  d.querySelectorAll('.wt').forEach(e=>e.onclick=()=>{
+ sub('رنگی را انتخاب کنید',`<div class="wgrid sq" id="wg"><button class="wt plus" id="cst">${svg('<path d="M12 5v14M5 12h14"/>')}</button>${t}</div>`,d=>{
+  q('#cst').onclick=()=>pgPick(kind);
+  d.querySelectorAll('.wt[data-i]').forEach(e=>e.onclick=()=>{
    const p=DARKS[+e.dataset.i];
    setWall(kind,'c'+e.dataset.i,'linear-gradient(155deg,'+p[0]+','+p[1]+')',false);
    pgWall(kind);
   });
  },()=>pgWall(kind));
+}
+function pgPick(kind){
+ let h=260,s=.6,v=.5,grad=false;
+ const css=()=>{const a=hsv2hex(h,s,v);return grad?'linear-gradient(155deg,'+a+','+hsv2hex((h+40)%360,s,Math.max(.15,v-.2))+')':a};
+ sub('رنگ دلخواه',`<div class="pkv" id="pkv"><div class="pkb2"><div class="bub"><div class="bt">پیام دریافتی</div></div><div class="bub me"><div class="bt">پیام ارسالی</div></div></div></div><div class="sv-sq" id="sq"><i id="sqd"></i></div><input type="range" class="hue" id="hue" min="0" max="359" value="${h}"><div class="mc"><div class="sw"><span>گرادیان</span>${tg('t-grad',false)}</div><div class="sw"><span>کد رنگ</span><input class="fld hexf" id="hex" dir="ltr" maxlength="7"></div></div><button class="apply" id="pka">اعمال</button>`,d=>{
+  const sq=q('#sq'),dot=q('#sqd'),pv=q('#pkv'),hue=q('#hue'),hexi=q('#hex');
+  const paint=()=>{
+   sq.style.background='linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl('+h+',100%,50%))';
+   dot.style.left=(s*100)+'%';dot.style.top=((1-v)*100)+'%';
+   pv.style.background=css();hexi.value=hsv2hex(h,s,v);
+  };
+  const mv=e=>{const r=sq.getBoundingClientRect();s=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));v=1-Math.min(1,Math.max(0,(e.clientY-r.top)/r.height));paint()};
+  sq.style.touchAction='none';
+  sq.onpointerdown=e=>{sq.setPointerCapture(e.pointerId);mv(e);sq.onpointermove=mv};
+  sq.onpointerup=()=>{sq.onpointermove=null};
+  hue.oninput=()=>{h=+hue.value;paint()};
+  hexi.onchange=()=>{const x=hexi.value.trim();if(/^#[0-9a-fA-F]{6}$/.test(x)){[h,s,v]=hex2hsv(x);hue.value=Math.round(h);paint()}};
+  bindTg('t-grad',on=>{grad=on;paint()});
+  q('#pka').onclick=()=>{setWall(kind,'x'+Date.now(),css(),false);pgWall(kind)};
+  paint();
+ },()=>pgColors(kind));
 }
 function pgTick(){
  const cur=store.get('tk','stock');
@@ -260,24 +294,69 @@ function fxSheet(){
   d.querySelectorAll('[data-f]').forEach(e=>e.onclick=()=>{store.set('fx',e.dataset.f);d.remove();const v=q('#fxv');if(v)v.textContent=FXN[e.dataset.f]});
  });
 }
+G.star='<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/>';
+let NAMETAB='n';
+function iconSheet(kind){
+ const key=kind=='r'?'ricon':'picon';
+ sheet(`<div class="fh"><b>${kind=='r'?'آیکون پاسخ‌ها':'آیکون پروفایل'}</b><button class="mb" id="icn0">غیرفعال</button></div><div class="egr" id="egr2">${PE.list.map(e=>`<button data-n="${e.n}">${PE.svg(e.n,34)}</button>`).join('')}</div>`,d=>{
+  const pick=async n=>{
+   if(typeof Wallet==='undefined'||!Wallet.pa()){d.remove();toast('آیکون ویژه‌ی پریمیوم است');pgShop(()=>pgName());return}
+   const a=A();
+   try{
+    const r=await fetch(PICKO_SERVER+'/api/pricon',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+a.token},body:JSON.stringify({icon:n,kind})});
+    if(!r.ok)throw 0;
+    store.set(key,n);d.remove();pgName();
+   }catch(e){toast('ذخیره نشد، سرور رو چک کن')}
+  };
+  q('#icn0').onclick=()=>pick('');
+  q('#egr2').onclick=e=>{const b=e.target.closest('button');if(b)pick(b.dataset.n)};
+ });
+}
+async function pgShop(backFn){
+ const a=A();
+ if(!a){toast('اول وارد حساب شو');return}
+ await Wallet.sync();
+ const st=Wallet.state(),pa=Wallet.pa();
+ const pd=st.prem>st.now?new Date(st.prem*1000).toLocaleDateString('fa-IR',{day:'numeric',month:'long',year:'numeric'}):'';
+ const plans=[['d7','۷ روز','۶۰'],['d30','۳۰ روز','۲۰۰'],['y1','۱ سال','۱۸۰۰']].map(p=>`<div class="sw plan" data-p="${p[0]}"><span>پریمیوم ${p[1]}</span><button class="mb">${st.own?'رایگان':p[2]+' پیکوین'}</button></div>`).join('');
+ const ben=['تغییر رنگ نام (حتی گرادیان)','آیکون روی پاسخ‌ها و پروفایل','ستاره‌ی پریمیوم کنار اسمت'].map(t=>`<div class="sw"><span>${t}</span><span class="ck">${svg(G.tick)}</span></div>`).join('');
+ const owner=st.own?`<div class="mc"><div class="msec">پنل مالک</div><input class="fld" id="gu" dir="ltr" placeholder="نام کاربری"><input class="fld" id="gn" type="number" placeholder="تعداد پیکوین"><button class="pb" id="gs">ارسال پیکوین</button></div>`:'';
+ sub('پریمیوم و پیکوین',`<div class="bal"><div class="big">${svg(G.star)}</div><b>${st.own?'∞':st.coins.toLocaleString('fa-IR')}</b><small>پیکوین شما</small></div><div class="mc"><div class="sw"><span>وضعیت پریمیوم</span><b>${st.own?'نامحدود (مالک)':(pa?'فعال تا '+pd:'غیرفعال')}</b></div></div><div class="mc"><div class="msec">مزایای پریمیوم</div>${ben}</div><div class="mc"><div class="msec">خرید پریمیوم</div>${plans}</div><div class="mc"><div class="msec">پیکوین از کجا؟</div><div class="sw"><span>لودو بازی کن و ببر</span><button class="mb" id="gogm">بازی‌ها</button></div></div>${owner}`,d=>{
+  d.querySelectorAll('.plan').forEach(e=>e.onclick=async()=>{try{await Wallet.buy(e.dataset.p);toast('پریمیوم فعال شد');pgShop(backFn)}catch(x){toast(x.message)}});
+  q('#gogm').onclick=()=>{closeSub(true);if(typeof go==='function')go('games')};
+  const gs=q('#gs');
+  if(gs)gs.onclick=async()=>{try{await Wallet.give({username:q('#gu').value.trim(),n:+q('#gn').value});toast('ارسال شد');q('#gn').value=''}catch(x){toast(x.message)}};
+ },backFn);
+}
 function pgName(){
  const a=A();
  if(!a){toast('اول وارد حساب شو');return}
- let sel=store.get('ncol',''),tab='n';
+ let sel=store.get('ncol','');
  const val=p=>p.join(',');
+ const pa=()=>typeof Wallet!=='undefined'&&Wallet.pa();
  const paint=()=>{
+  const tab=NAMETAB;
   const c1=(sel||'#60a5fa').split(',')[0],nm=esc(a.name),sty=sel?ncStyle(sel):'color:#60a5fa';
+  const ik=tab=='n'?'ricon':'picon',icn=store.get(ik,'');
   const pal=PAL.map((p,i)=>`<button class="pc r${Math.floor(i/7)}${val(p)==sel?' on':''}" data-v="${val(p)}" style="${p.length==1?'background:'+p[0]:'background:linear-gradient(135deg,'+p[0]+' 50%,'+p[1]+' 50%)'}"></button>`).join('');
-  const top=tab=='n'?`<div class="npv"><span class="avc">${esc((a.name||'?')[0])}</span><div class="nbub"><div class="sn" style="${sty}">${nm}</div><div class="rq" style="border-color:${c1}"><b style="${sty}">${nm}</b><span>پاسخ به پیام شما</span></div><p>نام شما در گروه‌ها و پاسخ‌ها با رنگ انتخاب‌شده نمایش داده می‌شود.</p></div></div>`:`<div class="ringw"><div class="ring" style="box-shadow:0 0 0 5px ${c1}"><span>${esc((a.name||'?')[0])}</span></div><p class="mu">آنلاین</p></div>`;
-  q('#nb').innerHTML=top+`<div class="mc"><div class="pal" id="pal">${pal}</div>${srow(null,tab=='n'?'افزودن آیکون به پاسخ‌ها':'افزودن آیکون به پروفایل','','<span class="sv">غیرفعال</span>','soon')}</div><p class="mu hint">از این رنگ برای نام شما، پاسخ‌هایی که ارسال می‌کنید استفاده خواهد شد.</p>`;
+  const ban=pa()?'':`<div class="premb"><span>تغییر رنگ نام ویژه‌ی پریمیوم است</span><button class="mb" id="pgb">دریافت</button></div>`;
+  const top=tab=='n'?`<div class="npv"><span class="avc">${esc((a.name||'?')[0])}</span><div class="nbub"><div class="sn" style="${sty}">${nm}</div><div class="rq" style="border-color:${c1}">${icn?`<i class="rpi">${PE.svg(icn,28)}</i>`:''}<b style="${sty}">${nm}</b><span>پاسخ به پیام شما</span></div><p>نام شما در گروه‌ها و پاسخ‌ها با رنگ انتخاب‌شده نمایش داده می‌شود.</p></div></div>`:`<div class="ringw"><div class="ring" style="box-shadow:0 0 0 5px ${c1}"><span>${esc((a.name||'?')[0])}</span></div><p class="mu">آنلاین</p></div>`;
+  q('#nb').innerHTML=ban+top+`<div class="mc"><div class="pal" id="pal">${pal}</div>${srow(null,tab=='n'?'افزودن آیکون به پاسخ‌ها':'افزودن آیکون به پروفایل','',`<span class="sv">${icn?PE.svg(icn,24):'غیرفعال'}</span>`,'ico')}</div><p class="mu hint">از این رنگ برای نام شما، پاسخ‌هایی که ارسال می‌کنید استفاده خواهد شد.</p>`;
   q('#pal').onclick=e=>{const b=e.target.closest('button');if(!b)return;sel=b.dataset.v;paint()};
-  q('#nb [data-a=soon]').onclick=()=>toast('به‌زودی');
+  q('#nb [data-a=ico]').onclick=()=>iconSheet(tab=='n'?'r':'p');
+  const pb=q('#pgb');if(pb)pb.onclick=()=>pgShop(()=>pgName());
  };
- sub('تغییر رنگ نام',`<div class="tabs2"><button data-t="n" class="on">نام</button><button data-t="p">پروفایل</button></div><div id="nb"></div><button class="apply" id="nap">اعمال</button>`,d=>{
+ sub('تغییر رنگ نام',`<div class="tabs2"><button data-t="n" class="${NAMETAB=='n'?'on':''}">نام</button><button data-t="p" class="${NAMETAB=='p'?'on':''}">پروفایل</button></div><div id="nb"></div><button class="apply" id="nap">اعمال</button>`,d=>{
   paint();
-  d.querySelectorAll('.tabs2 button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;d.querySelectorAll('.tabs2 button').forEach(x=>x.classList.toggle('on',x==b));paint()});
-  fetch(PICKO_SERVER+'/api/pbio',{headers:{Authorization:'Bearer '+a.token}}).then(r=>r.json()).then(j=>{if(typeof j.col==='string'&&j.col&&sel!==j.col){sel=j.col;store.set('ncol',sel);paint()}}).catch(()=>{});
+  d.querySelectorAll('.tabs2 button').forEach(b=>b.onclick=()=>{NAMETAB=b.dataset.t;d.querySelectorAll('.tabs2 button').forEach(x=>x.classList.toggle('on',x==b));paint()});
+  fetch(PICKO_SERVER+'/api/pbio',{headers:{Authorization:'Bearer '+a.token}}).then(r=>r.json()).then(j=>{
+   if(typeof j.col==='string'){sel=j.col;store.set('ncol',sel)}
+   if(typeof j.ricon==='string')store.set('ricon',j.ricon);
+   if(typeof j.picon==='string')store.set('picon',j.picon);
+   paint();
+  }).catch(()=>{});
   q('#nap').onclick=async()=>{
+   if(!pa()){toast('برای تغییر رنگ نام پریمیوم لازمه');pgShop(()=>pgName());return}
    try{
     const r=await fetch(PICKO_SERVER+'/api/pcol',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+a.token},body:JSON.stringify({col:sel})});
     if(!r.ok)throw 0;
@@ -406,7 +485,7 @@ function pgData(){
   q('#iq').onclick=e=>{const b=e.target.closest('button');if(!b)return;store.set('imgq',b.dataset.q);q('#iq').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x==b))};
  });
 }
-function act(a){if(a=='data'){pgData();return}if(a=='cam'){if(typeof Photo!=='undefined')Photo.start();else pickPhoto();return}
+function act(a){if(a=='shop'){pgShop();return}if(a=='data'){pgData();return}if(a=='cam'){if(typeof Photo!=='undefined')Photo.start();else pickPhoto();return}
  if(a=='edit'){editInfo();return}
  if(a=='goset'){const c=q('#mset').querySelectorAll('.mc')[2];if(c)c.scrollIntoView({behavior:'smooth',block:'start'});return}
  if(a=='chat')pgChat();else if(a=='acct')pgAcct();else if(a=='pk')pgPk();else if(a=='eco')pgEco();else if(a=='lang')pgLang();else if(a=='about')pgAbout();
@@ -417,7 +496,7 @@ function main(){
  const ch=esc((a.name||'?')[0]);
  return `<div class="mh"><div class="mav">${aimg(a)}${ch}<button class="mcam" data-a="cam">${svg(G.cam)}</button></div><h2>${esc(a.name)}</h2><p>آنلاین · <span dir="ltr">@${esc(a.username)}</span></p><div class="mbtns"><button class="mbn" data-a="cam">${svg(G.cam)}<span>تنظیم عکس</span></button><button class="mbn" data-a="edit">${svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>')}<span>ویرایش اطلاعات</span></button><button class="mbn" data-a="goset">${svg(G.gear)}<span>تنظیمات</span></button></div></div>
  <div class="mc"><div class="msec">حساب‌های کاربری</div><div class="mr" data-a="acct"><span class="mav2">${aimg(a)}${ch}</span><div class="mt"><b>${esc(a.name)}</b></div></div>${row('user','#22b8cf','مدیریت حساب‌ها','','soon')}</div>
- <div class="mc">${row('gear','#34c759','تنظیمات پیکو','','pk')}${row('info','#ff9f0a','درباره','','about')}</div>
+ <div class="mc">${row('gear','#34c759','تنظیمات پیکو','','pk')}${row('star','#f59e0b','پریمیوم و پیکوین','پریمیوم رو با پیکوین بخر','shop')}${row('info','#ff9f0a','درباره','','about')}</div>
  <div class="mc">${row('user','#2f9bff','حساب کاربری','اسم، نام کاربری، خروج از حساب','acct')}${row('chat','#ff9f0a','تنظیمات گفتگو','پس‌زمینه، حالت شب، انیمیشن‌ها','chat')}${row('key','#34c759','حریم خصوصی و امنیت','آخرین بازدید، دستگاه‌ها، کلیدهای عبور','soon')}${row('spk','#ff4d6d','اعلان‌ها','صداها، تماس‌ها، نشانگرها','soon')}${row('data','#3b82f6','داده‌ها و ذخیره‌سازی','تنظیمات دانلود رسانه','data')}${row('folder','#2f9bff','پوشه‌های گفتگو','مرتب‌سازی گفتگوها در پوشه‌ها','soon')}${row('laptop','#22b8cf','دستگاه‌ها','مدیریت دستگاه‌های متصل شده','soon')}${row('bat','#ff9f0a','ذخیره انرژی','کاهش مصرف انرژی در شارژ کم','eco')}${row('globe','#a855f7','زبان',({fa:'فارسی',da:'دری',en:'English'})[store.get('lang','fa')],'lang')}</div>
  <div class="mc"><div class="msec">راهنمایی</div>${row('dots','#ff9f0a','پرسیدن سؤال','','soon')}${row('q','#3b82f6','پرسش‌های متداول پیکو','','soon')}${row('shield','#34c759','سیاست حریم خصوصی','','soon')}</div>`;
 }

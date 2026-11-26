@@ -185,6 +185,56 @@ const TXT=`
 دفعه‌ی بعد ||| Better luck next time
 دوباره ||| Again
 نوبت ||| Turn
+بایگانی ||| Archive
+بایگانی‌شده ||| Archived
+گفتگوهای بایگانی‌شده ||| Archived chats
+گفتگو ||| chats
+گفتگوی بایگانی‌شده‌ای نداری ||| No archived chats
+خروج از بایگانی ||| Unarchive
+صدادار ||| Unmute
+صدادار کردن ||| Unmute
+بی‌صدا ||| Mute
+حذف گفتگو ||| Delete chat
+ترک و حذف گفتگو ||| Leave and delete chat
+بایگانی شد ||| Archived
+از بایگانی خارج شد ||| Removed from archive
+بی‌صدا شد ||| Muted
+صدادار شد ||| Unmuted
+حذف شد ||| Deleted
+تماس ||| Call
+پیام ||| Message
+بیوگرافی ||| Bio
+هدیه‌ی پیکوین ||| Gift Picoin
+افزودن به مخاطبین ||| Add to contacts
+در مخاطبین هستی ||| In your contacts
+پریمیوم و پیکوین ||| Premium and Picoin
+پریمیوم رو با پیکوین بخر ||| Buy Premium with Picoin
+پیکوین شما ||| Your Picoin
+وضعیت پریمیوم ||| Premium status
+مزایای پریمیوم ||| Premium benefits
+خرید پریمیوم ||| Buy Premium
+پیکوین از کجا؟ ||| Where do I get Picoin?
+لودو بازی کن و ببر ||| Play Ludo and win
+پنل مالک ||| Owner panel
+ارسال پیکوین ||| Send Picoin
+نامحدود (مالک) ||| Unlimited (owner)
+رایگان ||| Free
+رنگ دلخواه ||| Custom color
+گرادیان ||| Gradient
+کد رنگ ||| Color code
+پیام دریافتی ||| Received message
+پیام ارسالی ||| Sent message
+آیکون پاسخ‌ها ||| Reply icon
+آیکون پروفایل ||| Profile icon
+دریافت ||| Get
+تغییر رنگ نام ویژه‌ی پریمیوم است ||| Changing name color is a Premium feature
+آیکون ویژه‌ی پریمیوم است ||| Icons are a Premium feature
+برای تغییر رنگ نام پریمیوم لازمه ||| Premium is required to change name color
+پریمیوم لازمه ||| Premium required
+پیکوین کافی نداری ||| Not enough Picoin
+پریمیوم فعال شد ||| Premium activated
+پیکوین ارسال شد ||| Picoin sent
+ارسال شد ||| Sent
 پس‌زمینه گفتگو ||| Chat background
 پس‌زمینه لیست گفتگوها ||| Chat list background
 انتخاب از گالری ||| Choose from gallery

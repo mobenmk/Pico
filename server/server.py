@@ -127,7 +127,7 @@ def mj(r, i, rx=None):
         rt = dict(id=r["reply"], text=(None if r["rgone"] else r["rtext"]), mine=(r["ra"] == i))
     return dict(id=r["id"], text=r["text"], ts=r["ts"], mine=(r["a"] == i), fwd=r["fwd"], edited=bool(r["edited"]), reply=rt, rx=rx)
 
-MSQ = """select m.id,m.a,m.text,m.ts,m.reply,m.fwd,m.edited,m.ph,m.pw,m.phh,(select ph from msgs where id=m.reply) rph,
+MSQ = """select m.id,m.a,m.text,m.ts,m.reply,m.fwd,m.edited,m.ph,m.pw,m.phh,(select ph from msgs where id=m.reply) rph,(select ncol from users where id=m.a) snc,(select username from users where id=m.a) sun,(select prem from users where id=m.a) spr,(select ricon from users where id=m.a) sri,
  (select text from msgs where id=m.reply) rtext,(select a from msgs where id=m.reply) ra,(select gone from msgs where id=m.reply) rgone"""
 VIS = "((a=? and b=? and ha is null) or (a=? and b=? and hb is null))"
 
@@ -268,6 +268,8 @@ import photos
 photos.setup(app, db, me, err, toint)
 import bio
 bio.setup(app, db, me, err, toint)
+import extra
+extra.setup(app, db, me, err, toint)
 from photos import phinfo
 
 _mj0 = mj
@@ -275,6 +277,10 @@ def mj(r, i, rx=None):
     d = _mj0(r, i, rx)
     try:
         d["ph"] = dict(id=r["ph"], w=r["pw"], h=r["phh"]) if r["ph"] else None
+        pa = (r["sun"] == conv.OWNER) or ((r["spr"] or 0) > time.time())
+        d["pr"] = bool(pa)
+        d["nc"] = r["snc"] if pa else None
+        d["ri"] = r["sri"] if pa else None
         if d.get("reply") is not None:
             d["reply"]["ph"] = bool(r["rph"])
     except (IndexError, KeyError):

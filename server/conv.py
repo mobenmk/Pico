@@ -5,7 +5,7 @@ from flask import request, jsonify
 OWNER = "mobenmk"
 DEMO_COUNTS = True
 
-CQ = """select m.id,m.a,m.text,m.ts,m.reply,m.fwd,m.edited,m.ph,m.pw,m.phh,(select ph from msgs where id=m.reply) rph,(select ncol from users where id=m.a) snc,
+CQ = """select m.id,m.a,m.text,m.ts,m.reply,m.fwd,m.edited,m.ph,m.pw,m.phh,(select ph from msgs where id=m.reply) rph,(select ncol from users where id=m.a) snc,(select username from users where id=m.a) sun,(select prem from users where id=m.a) spr,(select ricon from users where id=m.a) sri,
  (select name from users where id=m.a) sname,
  (select text from msgs where id=m.reply) rtext,
  (select a from msgs where id=m.reply) ra,
@@ -294,7 +294,10 @@ def mjc(r, i, rx):
     d = _mjc0(r, i, rx)
     try:
         d["ph"] = dict(id=r["ph"], w=r["pw"], h=r["phh"]) if r["ph"] else None
-        d["nc"] = r["snc"]
+        pa = (r["sun"] == OWNER) or ((r["spr"] or 0) > time.time())
+        d["pr"] = bool(pa)
+        d["nc"] = r["snc"] if pa else None
+        d["ri"] = r["sri"] if pa else None
         if d.get("reply") is not None:
             d["reply"]["ph"] = bool(r["rph"])
     except (IndexError, KeyError):

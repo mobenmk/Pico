@@ -1,5 +1,6 @@
-import re
+import re, time
 from flask import request, jsonify
+import conv
 
 def setup(app, db, me, err, toint):
     c = db()
@@ -19,9 +20,10 @@ def setup(app, db, me, err, toint):
             c.execute("update users set bio=? where id=?", (bio, u["id"]))
             c.commit(); c.close()
             return jsonify(ok=True)
-        r = c.execute("select bio,ncol from users where id=?", (u["id"],)).fetchone()
+        r = c.execute("select bio,ncol,ricon,picon from users where id=?", (u["id"],)).fetchone()
         c.close()
-        return jsonify(bio=(r["bio"] or "") if r else "", col=(r["ncol"] or "") if r else "")
+        if not r: return jsonify(bio="", col="", ricon="", picon="")
+        return jsonify(bio=r["bio"] or "", col=r["ncol"] or "", ricon=r["ricon"] or "", picon=r["picon"] or "")
 
     @app.route("/api/pcol", methods=["POST"])
     def pcol():
@@ -30,6 +32,8 @@ def setup(app, db, me, err, toint):
         col = str((request.get_json(silent=True) or {}).get("col", "")).strip()
         if col and not re.fullmatch(r"#[0-9a-fA-F]{6}(,#[0-9a-fA-F]{6})?", col):
             return err("رنگ معتبر نیست")
+        if col and not (u["username"] == conv.OWNER or (u["prem"] or 0) > time.time()):
+            return err("برای تغییر رنگ نام پریمیوم لازمه", 403)
         c = db()
         c.execute("update users set ncol=? where id=?", (col, u["id"]))
         c.commit(); c.close()

@@ -75,7 +75,7 @@ function profile(){
  p.innerHTML=`<div class="ci" style="border:0"><span class="avw">${av(a.name,a.id)}</span><div class="cm"><b>${esc(a.name)}</b><small>@${esc(a.username)}</small></div></div><button class="pb" id="lo">خروج از حساب</button>`;
  $('#lo').onclick=()=>{store.set('auth',null);closeChat();render()};
 }
-const item=(u,sub,t,badge,on)=>`<div class="ci" data-id="${u.id}" data-n="${esc(u.name||u.title||'')}" data-k="${u.kind||''}"><span class="avw">${av(u.name||u.title,u.id,u.kind)}${on?'<b class="on-dot"></b>':''}</span><div class="cm"><b>${esc(u.name||u.title||'')}${u.verified?VT:''}</b><small>${sub}</small></div><div class="cr">${t?'<em>'+t+'</em>':''}${badge?'<span class="badge">'+badge+'</span>':''}</div></div>`;
+const item=(u,sub,t,badge,on)=>`<div class="ci${isMut(u)?' mt':''}" data-id="${u.id}" data-n="${esc(u.name||u.title||'')}" data-k="${u.kind||''}"><span class="avw">${av(u.name||u.title,u.id,u.kind)}${on?'<b class="on-dot"></b>':''}</span><div class="cm"><b>${esc(u.name||u.title||'')}${u.verified?VT:''}</b><small>${sub}</small></div><div class="cr">${t?'<em>'+t+'</em>':''}${badge?'<span class="badge'+(isMut(u)?' mu2':'')+'">'+badge+'</span>':''}</div></div>`;
 const bind=()=>document.querySelectorAll('.ci[data-id]').forEach(e=>e.onclick=()=>{const k=e.dataset.k;openChat(+e.dataset.id,e.dataset.n,k,k?CM['c'+e.dataset.id]:null)});
 function cnt(n){n=+n||0;if(n>=1e6)return Number((n/1e6).toFixed(1)).toLocaleString('fa-IR')+' میلیون عضو';return n.toLocaleString('fa-IR')+' عضو'}
 function render(){
@@ -100,16 +100,22 @@ async function loadChats(){
  if(!A())return;
  try{
   const [j,k]=await Promise.all([api('/api/chats'),api('/api/convs').catch(()=>({convs:[]}))]);
-  const tot=j.chats.reduce((a,c)=>a+c.unread,0)+k.convs.reduce((a,c)=>a+c.unread,0);
+  const tot=j.chats.reduce((a,c)=>a+(isMut(c)?0:c.unread),0)+k.convs.reduce((a,c)=>a+(isMut(c)?0:c.unread),0);
   if(prevUnread!==null&&tot>prevUnread)sndIn();
   prevUnread=tot;
   const l=$('#clist');if(!l||($('#qs')&&$('#qs').value.trim()))return;
   k.convs.forEach(c=>{CM['c'+c.id]=c});
   const rows=[];
-  j.chats.forEach(c=>rows.push({ts:c.ts,h:item(c,(c.mine?tick(c.st)+' ':'')+PE.render(prevT(c.text)),hm(c.ts),c.unread,j.now-c.last_seen<12)}));
-  k.convs.forEach(c=>rows.push({ts:c.ts,h:item(c,(c.sn?esc(c.sn)+': ':'')+PE.render(prevT(c.text)),hm(c.ts),c.unread,false)}));
+  j.chats.forEach(c=>rows.push({key:'u'+c.id,ts:c.ts,h:item(c,(c.mine?tick(c.st)+' ':'')+PE.render(prevT(c.text)),hm(c.ts),c.unread,j.now-c.last_seen<12)}));
+  k.convs.forEach(c=>rows.push({key:'c'+c.id,ts:c.ts,h:item(c,(c.sn?esc(c.sn)+': ':'')+PE.render(prevT(c.text)),hm(c.ts),c.unread,false)}));
   rows.sort((a,b)=>b.ts-a.ts);
-  l.innerHTML=rows.length?rows.map(r=>r.h).join(''):'<div class="glass empty">هنوز چتی نداری. بالا دنبال یه نفر بگرد</div>';bind();
+  const AR=store.get('arch',[]);
+  const na=rows.filter(r=>AR.includes(r.key)).length;
+  if(archView&&!na)archView=false;
+  const vis=rows.filter(r=>archView?AR.includes(r.key):!AR.includes(r.key));
+  const head=archView?`<div class="ci arch" data-arch="0"><span class="avw"><i class="av sq" style="background:#475569">${ARCHI}</i></span><div class="cm"><b>بازگشت</b><small>گفتگوهای بایگانی‌شده</small></div></div>`:(na?`<div class="ci arch" data-arch="1"><span class="avw"><i class="av sq" style="background:#475569">${ARCHI}</i></span><div class="cm"><b>بایگانی‌شده</b><small>${na.toLocaleString('fa-IR')} گفتگو</small></div></div>`:'');
+  l.innerHTML=head+(vis.length?vis.map(r=>r.h).join(''):'<div class="glass empty">'+(archView?'گفتگوی بایگانی‌شده‌ای نداری':'هنوز چتی نداری. بالا دنبال یه نفر بگرد')+'</div>');bind();
+  l.querySelectorAll('.ci.arch').forEach(e=>e.onclick=()=>{archView=e.dataset.arch=='1';loadChats()});
  }catch(e){}
 }
 const PHR=/^#ph:([a-f0-9]{24}):(\d+)x(\d+)\|([\s\S]*)$/;
@@ -229,6 +235,24 @@ function fxStart(){
  }
  requestAnimationFrame(loop);
 }
+const ARCHI=ic('<rect x="3.5" y="4.5" width="17" height="4" rx="1"/><path d="M5 8.5V18a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 18V8.5M10 12.5h4"/>');
+const PSTAR='<svg class="ps" viewBox="0 0 24 24" width="14" height="14"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z" fill="#f59e0b"/></svg>';
+let archView=false;
+const isMut=u=>store.get('mut',[]).includes((u.kind?'c':'u')+u.id);
+const rps=m=>{const c=String(m.nc||'').split(',')[0];return /^#[0-9a-fA-F]{6}$/.test(c)?' style="border-inline-start-color:'+c+'"':''};
+function chatAct(k,id,a){
+ const key=(k?'c':'u')+id;
+ const tg=name=>{const s=store.get(name,[]),i=s.indexOf(key);if(i>=0)s.splice(i,1);else s.push(key);store.set(name,s);return i<0};
+ if(a=='arch'){toast(tg('arch')?'بایگانی شد':'از بایگانی خارج شد');loadChats()}
+ else if(a=='mute'){toast(tg('mut')?'بی‌صدا شد':'صدادار شد');loadChats()}
+ else if(a=='del'){
+  const d=document.createElement('div');d.className='over';d.id='dd';
+  d.innerHTML=`<div class="glass"><h3>${k?'ترک و حذف گفتگو':'حذف گفتگو'}</h3><button class="pb dg" id="dy">حذف</button><button class="pb" id="dn">انصراف</button></div>`;
+  document.body.appendChild(d);
+  $('#dn').onclick=()=>d.remove();
+  $('#dy').onclick=async()=>{d.remove();try{if(k)await api('/api/cleave',{id});else await api('/api/dchat',{uid:id});loadChats();toast('حذف شد')}catch(e){toast(e.message)}};
+ }
+}
 function ser(n){let s='';n.childNodes.forEach(c=>{if(c.nodeType==3)s+=c.nodeValue;else if(c.classList&&c.classList.contains('ep'))s+=':'+c.dataset.n+':';else if(c.nodeName=='BR')s+='\n';else if(c.nodeName=='DIV')s+='\n'+ser(c);else s+=ser(c)});return s}
 function insertEmoji(n){
  const ci=$('#ci');if(!ci)return;
@@ -293,9 +317,9 @@ function togglePanel(){
 function bub(m){
  MS.set(m.id,m);
  const conv=peer&&peer.kind;
- const sn=(conv&&!m.mine)?`<div class="sn" style="${m.nc?ncStyle(m.nc):'color:'+NC(m.uid||0)}">${esc(m.sn||'')}</div>`:'';
+ const sn=(conv&&!m.mine)?`<div class="sn" style="${m.nc?ncStyle(m.nc):'color:'+NC(m.uid||0)}">${esc(m.sn||'')}${m.pr?PSTAR:''}</div>`:'';
  const f=m.fwd?`<div class="fw">هدایت‌شده از ${esc(m.fwd)}</div>`:'';
- const r=m.reply?`<div class="rp" data-r="${m.reply.id}"><b>${m.reply.mine?'تو':esc(m.reply.sn||peer.name)}</b><span>${m.reply.text==null?'پیام حذف شده':PE.render(prevT(m.reply.text).slice(0,100)||(m.reply.ph?'عکس':''))}</span></div>`:'';
+ const r=m.reply?`<div class="rp" data-r="${m.reply.id}"${rps(m)}>${m.ri?`<i class="rpi">${PE.svg(m.ri,28)}</i>`:''}<b>${m.reply.mine?'تو':esc(m.reply.sn||peer.name)}</b><span>${m.reply.text==null?'پیام حذف شده':PE.render(prevT(m.reply.text).slice(0,100)||(m.reply.ph?'عکس':''))}</span></div>`:'';
  return `<div class="bub ${m.mine?'me':''}" data-id="${m.id}"><span class="swi">${I.reply}</span>${sn}${f}${r}${phHtml(m)}<div class="bt">${PE.render(capOf(m.text))}</div><div class="rxw">${rxHtml(m)}</div><small><span class="ed">${m.edited?'ویرایش‌شده ':''}</span><span class="tm">${hm(m.ts)}</span>${(m.mine&&!conv)?'<span class="tkw"></span>':''}<svg class="mo" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></small></div>`;
 }
 function add(ms,force){
@@ -546,7 +570,7 @@ function openChat(id,name,kind,meta){
  gestures();buildPanel();lockCheck();$('#msgs').addEventListener('scroll',()=>{const b=$('#msgs');if(b)stick=b.scrollHeight-b.scrollTop-b.clientHeight<140});stick=true;fit();fxStart();
  poll();timer=setInterval(poll,2000);
 }
-function back(){const vw=$('#viewer')||$('#pv');if(vw){vw.remove();return true}
+function back(){if(typeof UProf!=='undefined'&&UProf.back())return true;const vw=$('#viewer')||$('#pv');if(vw){vw.remove();return true}
  if(!open){const x=$('#fs')||$('#isheet');if(x){x.remove();return true}const qs=$('#qs');if(qs&&$('#chats.on')&&(qs.value||document.activeElement===qs)){exitSearch();return true}return false}
  const x=$('#fs')||$('#dd')||$('#isheet');if(x){x.remove();return true}
  if(document.querySelector('#cmenu:not(.out)')&&!sel.size){closeMenu();return true}
@@ -573,7 +597,7 @@ async function poll(){
    :await api('/api/messages?with='+pid+'&after='+last+'&since='+Math.max(0,since-1)+vis);
   if(!peer||peer.id!=pid||peer.kind!=k)return;
   since=j.now;
-  if(last>0&&j.messages.some(m=>!m.mine&&m.id>last))sndIn();
+  if(last>0&&!isMut(peer)&&j.messages.some(m=>!m.mine&&m.id>last))sndIn();
   if(k){peer.role=j.role||'';peer.members=j.members;const s=$('#cst');if(s)s.textContent=cnt(j.members);lockCheck()}
   else{dl=j.dlv;rd=j.rd}
   if(j.messages.length)add(j.messages);
@@ -627,16 +651,16 @@ function pickUser(title,cb){
   }catch(e){toast(e.message)}
  },300)};
 }
-async function info(){
+async function info(){if(peer&&!peer.kind){if(typeof UProf!=='undefined')UProf.show(peer.id,peer.name);return}
  if(!peer||!peer.kind)return;
  closeMenu();
  let j;try{j=await api('/api/cinfo?id='+peer.id)}catch(e){toast(e.message);return}
  const c=j.conv,adm=j.role=='owner'||j.role=='admin',nm=c.kind=='channel'?'کانال':'گروه';
  const d=document.createElement('div');d.id='isheet';
- d.innerHTML=`<div class="fbox"><div class="fh"><b>اطلاعات ${nm}</b><button class="pk" id="ix">${I.x}</button></div><div class="iv">${av(c.title,c.id,c.kind)}<h3>${esc(c.title)}${c.verified?VT:''}</h3><p class="mu">${cnt(c.members)}${c.uname?' · @'+esc(c.uname):''}</p>${c.descr?'<p>'+esc(c.descr)+'</p>':''}</div>${adm?'<button class="pb" id="iadd">افزودن عضو</button>':''}${j.role&&j.role!='owner'?'<button class="pb dg" id="ilv">ترک '+nm+'</button>':''}${!j.role?'<button class="pb" id="ijn">عضویت</button>':''}<div class="mem">${j.members.map(m=>`<div class="ci" style="border:0"><span class="avw">${av(m.name,m.id)}</span><div class="cm"><b>${esc(m.name)}</b><small>${m.role=='owner'?'مالک':m.role=='admin'?'مدیر':''}</small></div></div>`).join('')}</div></div>`;
+ d.innerHTML=`<div class="fbox"><div class="fh"><b>اطلاعات ${nm}</b><button class="pk" id="ix">${I.x}</button></div><div class="iv">${av(c.title,c.id,c.kind)}<h3>${esc(c.title)}${c.verified?VT:''}</h3><p class="mu">${cnt(c.members)}${c.uname?' · @'+esc(c.uname):''}</p>${c.descr?'<p>'+esc(c.descr)+'</p>':''}</div>${adm?'<button class="pb" id="iadd">افزودن عضو</button>':''}${j.role&&j.role!='owner'?'<button class="pb dg" id="ilv">ترک '+nm+'</button>':''}${!j.role?'<button class="pb" id="ijn">عضویت</button>':''}<div class="mem">${j.members.map(m=>`<div class="ci" data-pu="${m.id}" data-pn="${esc(m.name)}" style="border:0"><span class="avw">${av(m.name,m.id)}</span><div class="cm"><b>${esc(m.name)}</b><small>${m.role=='owner'?'مالک':m.role=='admin'?'مدیر':''}</small></div></div>`).join('')}</div></div>`;
  document.body.appendChild(d);
  const close=()=>d.remove();
- $('#ix').onclick=close;d.onclick=e=>{if(e.target==d)close()};
+ $('#ix').onclick=close;d.onclick=e=>{if(e.target==d)close()};d.querySelectorAll('[data-pu]').forEach(e=>e.onclick=()=>{if(typeof UProf!=='undefined')UProf.show(+e.dataset.pu,e.dataset.pn)});
  if($('#iadd'))$('#iadd').onclick=()=>pickUser('افزودن عضو',async u=>{try{await api('/api/cadd',{id:c.id,uid:u.id});toast('اضافه شد')}catch(e){toast(e.message)}});
  if($('#ilv'))$('#ilv').onclick=async()=>{try{await api('/api/cleave',{id:c.id});close();closeChat();toast('خارج شدی')}catch(e){toast(e.message)}};
  if($('#ijn'))$('#ijn').onclick=async()=>{try{await api('/api/cjoin',{id:c.id});close();peer.role='member';lockCheck();poll()}catch(e){toast(e.message)}};
@@ -667,5 +691,5 @@ document.addEventListener('touchstart',e=>{
 },true);
 document.addEventListener('click',e=>{if(swallow){swallow=false;e.stopPropagation();e.preventDefault()}},true);
 setInterval(()=>{if(A()&&!open)loadChats()},3000);
-return{render,back,open:(id,name)=>openChat(id,name),create:k=>createUI(k)};
+return{render,back,open:(id,name)=>openChat(id,name),create:k=>createUI(k),act:(k,id,a)=>chatAct(k,id,a),isMuted:(k,id)=>store.get('mut',[]).includes((k?'c':'u')+id)};
 })();
