@@ -5,7 +5,7 @@ from flask import request, jsonify
 OWNER = "mobenmk"
 DEMO_COUNTS = True
 
-CQ = """select m.id,m.a,m.text,m.ts,m.reply,m.fwd,m.edited,m.ph,m.pw,m.phh,(select ph from msgs where id=m.reply) rph,
+CQ = """select m.id,m.a,m.text,m.ts,m.reply,m.fwd,m.edited,m.ph,m.pw,m.phh,(select ph from msgs where id=m.reply) rph,(select ncol from users where id=m.a) snc,
  (select name from users where id=m.a) sname,
  (select text from msgs where id=m.reply) rtext,
  (select a from msgs where id=m.reply) ra,
@@ -294,6 +294,7 @@ def mjc(r, i, rx):
     d = _mjc0(r, i, rx)
     try:
         d["ph"] = dict(id=r["ph"], w=r["pw"], h=r["phh"]) if r["ph"] else None
+        d["nc"] = r["snc"]
         if d.get("reply") is not None:
             d["reply"]["ph"] = bool(r["rph"])
     except (IndexError, KeyError):

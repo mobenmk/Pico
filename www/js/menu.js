@@ -26,7 +26,7 @@ const ico=(k,c)=>`<span class="mi" style="background:${c}">${svg(G[k])}</span>`;
 const row=(k,c,t,s,a)=>`<div class="mr" data-a="${a}">${ico(k,c)}<div class="mt"><b>${t}</b>${s?'<small>'+s+'</small>':''}</div></div>`;
 const BG=[['','#2a1456'],['blue','#10305e'],['green','#0f4a3a'],['rose','#5e1030'],['black','#000000']];
 function toast(t){let e=q('#toast');if(!e){e=document.createElement('div');e.id='toast';document.body.appendChild(e)}e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),2200)}
-function applyPrefs(){applyTheme();syncNight();
+function applyPrefs(){applyTheme();syncNight();applyWalls();
  const r=document.documentElement;
  r.style.setProperty('--bf',store.get('fs',17)+'px');
  const bg=store.get('cbg','');if(bg)r.dataset.cbg=bg;else delete r.dataset.cbg;
@@ -34,16 +34,16 @@ function applyPrefs(){applyTheme();syncNight();
 }
 const tg=(id,on)=>`<button class="tg${on?' on':''}" id="${id}"></button>`;
 function bindTg(id,fn){const b=q('#'+id);b.onclick=()=>{const on=!b.classList.contains('on');b.classList.toggle('on',on);fn(on)}}
-function sub(title,html,init){
+function sub(title,html,init,back){
  closeSub(true);
  const d=document.createElement('div');d.id='spg';d.className='spg';
  d.innerHTML=`<div class="sph"><button class="bk">${svg('<path d="M19 12H5M11 6l-6 6 6 6"/>')}</button><b>${title}</b></div><div class="spc">${html}</div>`;
  document.body.appendChild(d);
- d.querySelector('.bk').onclick=()=>closeSub();
+ d._back=back;d.querySelector('.bk').onclick=()=>closeSub();
  if(init)init(d);
 }
 function closeSub(instant){
- const d=q('#spg');if(!d)return false;
+ const d=q('#spg');if(!d)return false;if(!instant&&d._back){d._back();return true}
  clearInterval(d._t);d.id='';
  if(instant)d.remove();else{d.classList.add('out');setTimeout(()=>d.remove(),180)}
  return true;
@@ -62,6 +62,7 @@ function applyTheme(){
  s.setProperty('--glow',store.get('lbg','')||'#2a1456');
  s.setProperty('--cg',CG[store.get('cbg','')]||'#2a1456');
  r.dataset.bt=store.get('bt','glass');r.dataset.cl=store.get('cl','two');
+ s.setProperty('--nc',(store.get('ncol','')||'').split(',')[0]||'transparent');
 }
 const mq=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;
 function syncNight(){
@@ -136,8 +137,8 @@ function pgChat(){
  const html=`
  <div class="mc"><div class="msec">اندازه متن پیام</div><div class="sl2"><input type="range" id="fsz" min="14" max="22" step="1" value="${fs}"><span class="sv2" id="fszv">${fs}</span></div></div>
  ${PV}
- <div class="mc">${srow(IC.img,'تغییر پس‌زمینه گفتگو','','','bgc')}${srow(IC.img,'تغییر پس‌زمینه لیست گفتگوها','','','bgl')}${srow(IC.pal,'تغییر رنگ نام','','','soon')}${srow(IC.fx,'افکت پس زمینه','','<span class="sv">بر اساس تاریخ</span>','soon')}${srow(IC.bub,'نوع حباب پیام','',`<span class="sv" id="btv">${store.get('bt','glass')=='solid'?'ساده':'شیشه‌ای'}</span>`,'bt')}${srow(IC.tick,'نوع تیک خوانده شدن پیام','','<span class="sv">استاندارد</span>','soon')}</div>
- <div class="mc"><div class="msec">پوسته رنگی</div><div class="thm" id="thm2">${thm}</div>${srow(night?IC.sun:IC.moon,night?'تغییر به حالت روز':'تغییر به حالت شب','','','night')}</div>
+ <div class="mc">${srow(IC.img,'تغییر پس‌زمینه گفتگو','','','bgc')}${srow(IC.img,'تغییر پس‌زمینه لیست گفتگوها','','','bgl')}${srow(IC.pal,'تغییر رنگ نام','','','nc')}${srow(IC.fx,'افکت پس زمینه','',`<span class="sv" id="fxv">${FXN[store.get('fx','off')]||FXN.off}</span>`,'fx')}${srow(IC.bub,'نوع حباب پیام','',`<span class="sv" id="btv">${BTN[store.get('bt','glass')]||'Glass'}</span>`,'bt')}${srow(IC.tick,'نوع تیک خوانده شدن پیام','',`<span class="sv">${(TKN.find(x=>x[0]==store.get('tk','stock'))||TKN[0])[1]}</span>`,'tk')}</div>
+ <div class="mc"><div class="msec">پوسته رنگی</div><div class="thm" id="thm2">${thm}</div>${srow(night?IC.sun:IC.moon,night?'تغییر به حالت روز':'تغییر به حالت شب','','','night')}${srow(IC.pal,'جستجوی پوسته‌ها','','','soon')}</div>
  <div class="mc"><div class="msec">گوشه‌های پیام</div><div class="sl2"><input type="range" id="brs" min="4" max="28" step="1" value="${br}"><span class="sv2" id="brv">${br}</span></div></div>
  <div class="mc"><div class="msec">نمای لیست گفتگوها</div><div class="cls" id="cls"><button data-c="two" class="${cl=='two'?'on':''}">${ml(2)}<span>دو خطی</span></button><button data-c="three" class="${cl=='three'?'on':''}">${ml(3)}<span>سه خطی</span></button></div></div>
  <div class="mc"><div class="msec">آیکون برنامه</div><div class="aic" id="aic">${icons}</div></div>
@@ -162,11 +163,128 @@ function pgChat(){
   ['browser','next','ear','speak','prec','pmed','share'].forEach(k=>bindTg('c-'+k,on=>store.set('c_'+k,on)));
   d.querySelectorAll('[data-a]').forEach(e=>e.onclick=()=>{
    const k=e.dataset.a;if(!k)return;
-   if(k=='bgc')bgSheet('c');else if(k=='bgl')bgSheet('l');else if(k=='bt')btSheet();else if(k=='react')reactSheet();
+   if(k=='bgc')pgWall('c');else if(k=='bgl')pgWall('l');else if(k=='bt')pgBub();else if(k=='tk')pgTick();else if(k=='nc')pgName();else if(k=='fx')fxSheet();else if(k=='react')reactSheet();
    else if(k=='night'){const t=q('#thm');if(t)t.click();pgChat()}
    else toast('به‌زودی');
   });
  });
+}
+const TKN=[['stock','Stock'],['bold','Bold'],['slim','Slim'],['dots','Dots'],['cubes','Cubes'],['lines','Lines'],['hearts','Hearts'],['ring','Rings'],['arrow','Arrows']];
+const BTS=[['glass','Glass'],['solid','Solid'],['tail','Telegram'],['ios','iOS'],['square','Square'],['lines','Lines'],['edge','Edge'],['pill','Pill']];
+const BTN={};BTS.forEach(b=>{BTN[b[0]]=b[1]});
+const FXN={off:'غیرفعال',date:'بر اساس تاریخ',snow:'دانه‌های برف',fire:'آتش‌بازی'};
+const WALLS=[['','radial-gradient(circle at 80% -10%,#2a1456,transparent 50%),#050507'],['green','linear-gradient(160deg,#d7e08a,#7fb77a 50%,#d6dcb5)'],['fog','#d3dae6'],['aurora','linear-gradient(135deg,#f472b6,#fbbf24 45%,#22d3ee)'],['peach','linear-gradient(160deg,#f9a8d4,#fcd34d 55%,#fb923c)'],['lilac','linear-gradient(160deg,#e9d5ff,#bfdbfe 60%,#dcfce7)'],['candy','linear-gradient(160deg,#bef264,#fbbf24 60%,#86efac)'],['space','linear-gradient(160deg,#4f46e5,#c4b5fd 70%,#f0abfc)'],['sunrise','linear-gradient(160deg,#fb7185,#fbbf24 60%,#fde68a)'],['mint','linear-gradient(160deg,#60a5fa,#86efac 60%,#fde68a)'],['violet','linear-gradient(160deg,#7c3aed,#4f46e5 60%,#2563eb)'],['rose','linear-gradient(160deg,#f43f5e,#a855f7 60%,#6366f1)']];
+const DARKS=[['#0e4a5c','#1b2a4e'],['#18284a','#1f1f3d'],['#14403c','#1b2740'],['#2a2e38','#15171c'],['#3a2a40','#241a3f'],['#3a2724','#5a3d2e'],['#1f5566','#1d2d57'],['#12435a','#3d2f66'],['#33472e','#12403a'],['#1d3141','#1d3141'],['#111c26','#111c26'],['#0b1020','#0b1020'],['#1f3a1f','#1f3a1f'],['#152016','#152016'],['#0e170f','#0e170f'],['#33332a','#33332a'],['#2b2520','#2b2520'],['#1d1b1a','#1d1b1a'],['#4a3030','#4a3030'],['#341f24','#341f24'],['#25161a','#25161a']];
+const PAT='url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27130%27 height=%27130%27 viewBox=%270 0 130 130%27%3E%3Cg fill=%27none%27 stroke=%27%23ffffff%27 stroke-opacity=%27.16%27 stroke-width=%271.4%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Ccircle cx=%2722%27 cy=%2726%27 r=%276%27/%3E%3Cpath d=%27M78 20l3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1z%27/%3E%3Cpath d=%27M100 78c6-4 12 4 6 8M26 88l8-6 8 6M62 108h14%27/%3E%3C/g%3E%3C/svg%3E")';
+const PAL=[['#5aa9e6'],['#7ccf6e'],['#e8a95a'],['#e88a7a'],['#8f8fe8'],['#52c9c0'],['#e8749a'],['#0b5394','#4fb8ff'],['#1b7f35','#a8e868'],['#c25a14','#eab35a'],['#9c3040','#ff9b87'],['#5b2fc9','#c79bff'],['#0b6a86','#3fd8cf'],['#8a3a74','#ff8fb5'],['#3b82f6','#ef4444'],['#fb923c','#16a34a'],['#4ade80','#ef4444'],['#22d3ee','#16a34a'],['#22d3ee','#fb923c'],['#a78bfa','#f97316'],['#3b82f6','#f59e0b']];
+function applyWalls(){
+ const r=document.documentElement,s=r.style;
+ s.setProperty('--pat',PAT);
+ const cw=store.get('cwcss','');
+ if(cw){s.setProperty('--cw',cw);r.dataset.wp=store.get('cwpat',0)?'p':'1'}else{s.removeProperty('--cw');delete r.dataset.wp}
+ const lw=store.get('lwcss','');
+ if(lw){s.setProperty('--lw',lw);r.dataset.lw='1'}else{s.removeProperty('--lw');delete r.dataset.lw}
+}
+function pickImg(cb){
+ const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+ inp.onchange=()=>{
+  const f=inp.files&&inp.files[0];if(!f)return;
+  const url=URL.createObjectURL(f),img=new Image();
+  img.onload=()=>{
+   const k=Math.min(1,1080/Math.max(img.width,img.height)),w=Math.round(img.width*k),h=Math.round(img.height*k);
+   const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+   URL.revokeObjectURL(url);
+   const du=c.toDataURL('image/jpeg',0.75);
+   if(du.length>1800000){toast('تصویر خیلی بزرگه');return}
+   cb(du);
+  };
+  img.onerror=()=>toast('عکس خونده نشد');
+  img.src=url;
+ };
+ inp.click();
+}
+function setWall(kind,sel,css,pat){
+ const k=kind=='c'?'cw':'lw';
+ store.set(k+'css',css);store.set(k+'sel',sel);
+ if(kind=='c'){store.set('cwpat',pat?1:0);store.set('cbg','')}
+ applyPrefs();
+}
+function pgWall(kind){
+ const key=kind=='c'?'cw':'lw',sel=store.get(key+'sel','');
+ const tiles=WALLS.map(w=>`<button class="wt${sel==w[0]?' on':''}" data-id="${w[0]}" style="background:${w[1]}">${sel==w[0]?`<span class="wck">${svg(IC.tick)}</span>`:''}</button>`).join('');
+ const off=kind=='l'?srow('<circle cx="12" cy="12" r="8.5"/><path d="M8 12h8"/>','غیرفعال کردن پس‌زمینه لیست گفتگوها','','','off'):'';
+ sub(kind=='c'?'پس‌زمینه گفتگو':'پس‌زمینه لیست گفتگوها',`<div class="mc">${srow(IC.img,'انتخاب از گالری','','','gal')}${srow(IC.pal,'تنظیم رنگ','','','col')}${off}</div><div class="wgrid" id="wg">${tiles}</div>`,d=>{
+  d.querySelectorAll('.wt').forEach(e=>e.onclick=()=>{
+   const w=WALLS.find(x=>x[0]==e.dataset.id);
+   setWall(kind,w[0],w[0]==''?'':w[1],w[0]!=='');
+   pgWall(kind);
+  });
+  d.querySelectorAll('[data-a]').forEach(e=>e.onclick=()=>{
+   const k=e.dataset.a;
+   if(k=='gal')pickImg(du=>{setWall(kind,'img','url('+du+') center/cover no-repeat',false);pgWall(kind)});
+   else if(k=='col')pgColors(kind);
+   else if(k=='off'){setWall('l','','',false);pgWall('l')}
+  });
+ },()=>pgChat());
+}
+function pgColors(kind){
+ const sel=store.get((kind=='c'?'cw':'lw')+'sel','');
+ const t=DARKS.map((p,i)=>`<button class="wt${sel=='c'+i?' on':''}" data-i="${i}" style="background:linear-gradient(155deg,${p[0]},${p[1]})">${sel=='c'+i?`<span class="wck">${svg(IC.tick)}</span>`:''}</button>`).join('');
+ sub('رنگی را انتخاب کنید',`<div class="wgrid sq" id="wg">${t}</div>`,d=>{
+  d.querySelectorAll('.wt').forEach(e=>e.onclick=()=>{
+   const p=DARKS[+e.dataset.i];
+   setWall(kind,'c'+e.dataset.i,'linear-gradient(155deg,'+p[0]+','+p[1]+')',false);
+   pgWall(kind);
+  });
+ },()=>pgWall(kind));
+}
+function pgTick(){
+ const cur=store.get('tk','stock');
+ const rows=TKN.map(t=>`<div class="tkrow${cur==t[0]?' on':''}" data-k="${t[0]}"><div class="bub me"><div class="bt">${t[1]}</div><small><span class="tm">۵:۵۹ بعدازظهر</span><span class="tkw"><svg class="tk" style="color:#fff" viewBox="0 0 18 12" width="16" height="11">${TKS[t[0]](2)}</svg></span></small></div></div>`).join('');
+ sub('نوع تیک خوانده شدن پیام',`<div class="tkp">${rows}</div>`,d=>{
+  d.querySelectorAll('.tkrow').forEach(e=>e.onclick=()=>{store.set('tk',e.dataset.k);d.querySelectorAll('.tkrow').forEach(x=>x.classList.toggle('on',x==e))});
+ },()=>pgChat());
+}
+function pgBub(){
+ const cur=store.get('bt','glass');
+ const tk=`<svg class="tk" style="color:#fff" viewBox="0 0 18 12" width="16" height="11">${TKS[store.get('tk','stock')](2)}</svg>`;
+ const rows=BTS.map(b=>`<div class="bprev${cur==b[0]?' on':''}" data-bt="${b[0]}" data-k="${b[0]}"><div class="bub"><div class="bt">${b[1]}</div><small><span class="tm">۵:۴۴ بعدازظهر</span></small></div><div class="bub me"><div class="bt">${b[1]}</div><small><span class="tm">۵:۵۹ بعدازظهر</span><span class="tkw">${tk}</span></small></div></div>`).join('');
+ document.documentElement.dataset.bt='glass';
+ sub('نوع حباب پیام',`<div class="bpl">${rows}</div>`,d=>{
+  d.querySelectorAll('.bprev').forEach(e=>e.onclick=()=>{store.set('bt',e.dataset.k);d.querySelectorAll('.bprev').forEach(x=>x.classList.toggle('on',x==e))});
+ },()=>{applyPrefs();pgChat()});
+}
+function fxSheet(){
+ const cur=store.get('fx','off');
+ sheet(`<div class="fh"><b>افکت پس زمینه</b></div>${Object.keys(FXN).map(k=>`<div class="rad" data-f="${k}"><span>${FXN[k]}</span><i class="${cur==k?'on':''}"></i></div>`).join('')}`,d=>{
+  d.querySelectorAll('[data-f]').forEach(e=>e.onclick=()=>{store.set('fx',e.dataset.f);d.remove();const v=q('#fxv');if(v)v.textContent=FXN[e.dataset.f]});
+ });
+}
+function pgName(){
+ const a=A();
+ if(!a){toast('اول وارد حساب شو');return}
+ let sel=store.get('ncol',''),tab='n';
+ const val=p=>p.join(',');
+ const paint=()=>{
+  const c1=(sel||'#60a5fa').split(',')[0],nm=esc(a.name),sty=sel?ncStyle(sel):'color:#60a5fa';
+  const pal=PAL.map((p,i)=>`<button class="pc r${Math.floor(i/7)}${val(p)==sel?' on':''}" data-v="${val(p)}" style="${p.length==1?'background:'+p[0]:'background:linear-gradient(135deg,'+p[0]+' 50%,'+p[1]+' 50%)'}"></button>`).join('');
+  const top=tab=='n'?`<div class="npv"><span class="avc">${esc((a.name||'?')[0])}</span><div class="nbub"><div class="sn" style="${sty}">${nm}</div><div class="rq" style="border-color:${c1}"><b style="${sty}">${nm}</b><span>پاسخ به پیام شما</span></div><p>نام شما در گروه‌ها و پاسخ‌ها با رنگ انتخاب‌شده نمایش داده می‌شود.</p></div></div>`:`<div class="ringw"><div class="ring" style="box-shadow:0 0 0 5px ${c1}"><span>${esc((a.name||'?')[0])}</span></div><p class="mu">آنلاین</p></div>`;
+  q('#nb').innerHTML=top+`<div class="mc"><div class="pal" id="pal">${pal}</div>${srow(null,tab=='n'?'افزودن آیکون به پاسخ‌ها':'افزودن آیکون به پروفایل','','<span class="sv">غیرفعال</span>','soon')}</div><p class="mu hint">از این رنگ برای نام شما، پاسخ‌هایی که ارسال می‌کنید استفاده خواهد شد.</p>`;
+  q('#pal').onclick=e=>{const b=e.target.closest('button');if(!b)return;sel=b.dataset.v;paint()};
+  q('#nb [data-a=soon]').onclick=()=>toast('به‌زودی');
+ };
+ sub('تغییر رنگ نام',`<div class="tabs2"><button data-t="n" class="on">نام</button><button data-t="p">پروفایل</button></div><div id="nb"></div><button class="apply" id="nap">اعمال</button>`,d=>{
+  paint();
+  d.querySelectorAll('.tabs2 button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;d.querySelectorAll('.tabs2 button').forEach(x=>x.classList.toggle('on',x==b));paint()});
+  fetch(PICKO_SERVER+'/api/pbio',{headers:{Authorization:'Bearer '+a.token}}).then(r=>r.json()).then(j=>{if(typeof j.col==='string'&&j.col&&sel!==j.col){sel=j.col;store.set('ncol',sel);paint()}}).catch(()=>{});
+  q('#nap').onclick=async()=>{
+   try{
+    const r=await fetch(PICKO_SERVER+'/api/pcol',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+a.token},body:JSON.stringify({col:sel})});
+    if(!r.ok)throw 0;
+    store.set('ncol',sel);applyPrefs();toast('ذخیره شد');pgChat();
+   }catch(e){toast('ذخیره نشد، سرور رو چک کن')}
+  };
+ },()=>pgChat());
 }
 function pgAcct(){
  const a=A();

@@ -5,7 +5,7 @@ const A=()=>store.get('auth',null);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const hm=t=>{const d=new Date(t*1000);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
 const av=(n,id,k)=>`<i class="av${k?' sq':''}" style="background:${['#7c3aed','#2563eb','#db2777','#059669','#d97706'][id%5]}">${k?'':`<img class="avi" src="${PICKO_SERVER}/api/avatar/${id}${A()&&A().id==id?'?v='+store.get('avpv',0):''}" onerror="this.remove()">`}${esc((n||'?')[0])}</i>`;
-const tick=s=>`<svg class="tk ${s==2?'rd':''}" viewBox="0 0 18 12" width="16" height="11" fill="none" stroke="#9a9aaa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6.5l3.5 3.5L11 2"/>${s>=1?'<path d="M6 6.5l3.5 3.5L16 2"/>':''}</svg>`;
+const tick=s=>`<svg class="tk${s==2?' rd':''}" viewBox="0 0 18 12" width="16" height="11">${(TKS[store.get('tk','stock')]||TKS.stock)(s)}</svg>`;
 const VT='<svg class="vt" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="11" fill="#3b82f6"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const NC=id=>['#a78bfa','#60a5fa','#f472b6','#34d399','#fbbf24','#fb923c'][id%6];
 const ic=p=>`<svg viewBox="0 0 24 24">${p}</svg>`;
@@ -193,6 +193,42 @@ function fit(){
 }
 if(window.visualViewport){visualViewport.addEventListener('resize',fit);visualViewport.addEventListener('scroll',fit)}
 window.addEventListener('resize',fit);
+function fxMode(){
+ let m=store.get('fx','off');
+ if(m=='date'){const d=new Date(),mo=d.getMonth(),day=d.getDate();m=((mo==11&&day>=30)||(mo==0&&day<=2))?'fire':((mo==11||mo<=1)?'snow':'off')}
+ return m;
+}
+function fxStart(){
+ const v=$('#chatv');if(!v)return;
+ const m=fxMode();
+ if(m=='off'||document.body.classList.contains('noanim'))return;
+ const cv=document.createElement('canvas');cv.id='fx';v.insertBefore(cv,v.firstChild);
+ const ctx=cv.getContext('2d');
+ let W=0,H=0;
+ const rs=()=>{W=cv.width=v.clientWidth;H=cv.height=v.clientHeight};rs();
+ const P=[],FW=[];
+ function loop(){
+  if(!cv.isConnected)return;
+  if(v.clientWidth!==W||v.clientHeight!==H)rs();
+  ctx.clearRect(0,0,W,H);
+  if(m=='snow'){
+   if(P.length<70&&Math.random()<.4)P.push({x:Math.random()*W,y:-10,r:1+Math.random()*2.5,v:.6+Math.random()*1.4,d:Math.random()*6});
+   ctx.fillStyle='rgba(255,255,255,.85)';
+   for(let i=P.length-1;i>=0;i--){const p=P[i];p.y+=p.v;p.x+=Math.sin((p.y+p.d)/30)*.5;if(p.y>H+5)P.splice(i,1);else{ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.3);ctx.fill()}}
+  }else{
+   if(Math.random()<.02)FW.push({x:W*(.2+Math.random()*.6),y:H*(.15+Math.random()*.35),c:'hsl('+Math.floor(Math.random()*360)+',90%,65%)',t:0,p:Array.from({length:36},(_,k)=>({a:k/36*6.283,s:1+Math.random()*2.2}))});
+   for(let i=FW.length-1;i>=0;i--){
+    const f=FW[i];f.t++;
+    if(f.t>60){FW.splice(i,1);continue}
+    ctx.fillStyle=f.c;ctx.globalAlpha=1-f.t/60;
+    f.p.forEach(q=>{ctx.beginPath();ctx.arc(f.x+Math.cos(q.a)*q.s*f.t*1.3,f.y+Math.sin(q.a)*q.s*f.t*1.3+f.t*f.t*.01,2,0,6.3);ctx.fill()});
+    ctx.globalAlpha=1;
+   }
+  }
+  requestAnimationFrame(loop);
+ }
+ requestAnimationFrame(loop);
+}
 function ser(n){let s='';n.childNodes.forEach(c=>{if(c.nodeType==3)s+=c.nodeValue;else if(c.classList&&c.classList.contains('ep'))s+=':'+c.dataset.n+':';else if(c.nodeName=='BR')s+='\n';else if(c.nodeName=='DIV')s+='\n'+ser(c);else s+=ser(c)});return s}
 function insertEmoji(n){
  const ci=$('#ci');if(!ci)return;
@@ -257,7 +293,7 @@ function togglePanel(){
 function bub(m){
  MS.set(m.id,m);
  const conv=peer&&peer.kind;
- const sn=(conv&&!m.mine)?`<div class="sn" style="color:${NC(m.uid||0)}">${esc(m.sn||'')}</div>`:'';
+ const sn=(conv&&!m.mine)?`<div class="sn" style="${m.nc?ncStyle(m.nc):'color:'+NC(m.uid||0)}">${esc(m.sn||'')}</div>`:'';
  const f=m.fwd?`<div class="fw">هدایت‌شده از ${esc(m.fwd)}</div>`:'';
  const r=m.reply?`<div class="rp" data-r="${m.reply.id}"><b>${m.reply.mine?'تو':esc(m.reply.sn||peer.name)}</b><span>${m.reply.text==null?'پیام حذف شده':PE.render(prevT(m.reply.text).slice(0,100)||(m.reply.ph?'عکس':''))}</span></div>`:'';
  return `<div class="bub ${m.mine?'me':''}" data-id="${m.id}"><span class="swi">${I.reply}</span>${sn}${f}${r}${phHtml(m)}<div class="bt">${PE.render(capOf(m.text))}</div><div class="rxw">${rxHtml(m)}</div><small><span class="ed">${m.edited?'ویرایش‌شده ':''}</span><span class="tm">${hm(m.ts)}</span>${(m.mine&&!conv)?'<span class="tkw"></span>':''}<svg class="mo" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></small></div>`;
@@ -507,7 +543,7 @@ function openChat(id,name,kind,meta){
  $('#cb').onclick=back;$('.chead .t').onclick=info;
  $('#sax').onclick=clearSel;$('#sa-reply').onclick=aReply;$('#sa-edit').onclick=aEdit;
  $('#sa-copy').onclick=aCopy;$('#sa-fwd').onclick=aFwd;$('#sa-del').onclick=aDel;
- gestures();buildPanel();lockCheck();$('#msgs').addEventListener('scroll',()=>{const b=$('#msgs');if(b)stick=b.scrollHeight-b.scrollTop-b.clientHeight<140});stick=true;fit();
+ gestures();buildPanel();lockCheck();$('#msgs').addEventListener('scroll',()=>{const b=$('#msgs');if(b)stick=b.scrollHeight-b.scrollTop-b.clientHeight<140});stick=true;fit();fxStart();
  poll();timer=setInterval(poll,2000);
 }
 function back(){const vw=$('#viewer')||$('#pv');if(vw){vw.remove();return true}

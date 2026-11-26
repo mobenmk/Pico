@@ -185,6 +185,26 @@ const TXT=`
 دفعه‌ی بعد ||| Better luck next time
 دوباره ||| Again
 نوبت ||| Turn
+پس‌زمینه گفتگو ||| Chat background
+پس‌زمینه لیست گفتگوها ||| Chat list background
+انتخاب از گالری ||| Choose from gallery
+تنظیم رنگ ||| Set color
+غیرفعال کردن پس‌زمینه لیست گفتگوها ||| Disable chat list background
+رنگی را انتخاب کنید ||| Choose a color
+تغییر رنگ نام ||| Change name color
+پروفایل ||| Profile
+پاسخ به پیام شما ||| Reply to your message
+نام شما در گروه‌ها و پاسخ‌ها با رنگ انتخاب‌شده نمایش داده می‌شود. ||| Your name in groups and replies is shown in the chosen color.
+افزودن آیکون به پاسخ‌ها ||| Add icon to replies
+افزودن آیکون به پروفایل ||| Add icon to profile
+غیرفعال ||| Off
+از این رنگ برای نام شما، پاسخ‌هایی که ارسال می‌کنید استفاده خواهد شد. ||| This color is used for your name and the replies you send.
+اعمال ||| Apply
+جستجوی پوسته‌ها ||| Search themes
+دانه‌های برف ||| Snowflakes
+آتش‌بازی ||| Fireworks
+تصویر خیلی بزرگه ||| Image is too large
+رنگ معتبر نیست ||| Invalid color
 نام شما ||| Your name
 نام خانوادگی ||| Last name
 درباره ||| About
