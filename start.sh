@@ -4,7 +4,7 @@ pkill -f server.py; pkill -f cloudflared
 cd ~/picko2/server
 python server.py > ~/server.log 2>&1 &
 sleep 2
-cloudflared tunnel --no-autoupdate --protocol http2 --url http://localhost:5000 > ~/tunnel.log 2>&1 &
+cloudflared tunnel --no-autoupdate --protocol http2 --url http://127.0.0.1:5000 > ~/tunnel.log 2>&1 &
 URL=""
 for i in $(seq 1 45); do
   URL=$(grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' ~/tunnel.log | head -1)

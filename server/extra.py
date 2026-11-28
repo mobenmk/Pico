@@ -3,7 +3,7 @@ from flask import request, jsonify
 import conv
 
 PLANS = {"d7": (60, 7 * 86400), "d30": (200, 30 * 86400), "y1": (1800, 365 * 86400)}
-DAY_CAP = 150
+DAY_CAP = 100
 
 def is_owner(u):
     return u["username"] == conv.OWNER
@@ -37,12 +37,12 @@ def setup(app, db, me, err, toint):
     def earn():
         u = me()
         if not u: return err("login", 401)
-        n = max(0, min(30, toint((request.get_json(silent=True) or {}).get("n"))))
+        n = max(0, min(15, toint((request.get_json(silent=True) or {}).get("n"))))
         now = time.time()
         c = db()
         last = c.execute("select max(ts) m from earnlog where uid=?", (u["id"],)).fetchone()["m"] or 0
         day = c.execute("select coalesce(sum(n),0) s from earnlog where uid=? and ts>?", (u["id"], now - 86400)).fetchone()["s"]
-        g = 0 if (n <= 0 or now - last < 5) else max(0, min(n, DAY_CAP - day))
+        g = 0 if (n <= 0 or now - last < 90) else max(0, min(n, DAY_CAP - day))
         if g > 0:
             c.execute("insert into earnlog(uid,ts,n) values(?,?,?)", (u["id"], now, g))
             c.execute("update users set coins=coalesce(coins,0)+? where id=?", (g, u["id"]))

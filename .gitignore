@@ -3,3 +3,7 @@ server/*.db
 __pycache__/
 *.pyc
 node_modules/
+server/mail.conf
+server/.secret
+server/picko.db
+server/*.db
